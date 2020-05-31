@@ -13,38 +13,20 @@ import javax.swing.event.HyperlinkListener;
 import javax.swing.filechooser.FileNameExtensionFilter;
 import javax.swing.text.DefaultCaret;
 import java.awt.*;
+import java.awt.event.WindowAdapter;
+import java.awt.event.WindowEvent;
 import java.io.*;
 import java.net.Socket;
 
-public class Main extends JFrame {
+public class PrivateChatFrame extends JFrame {
     private static final long serialVersionUID = 1L;
 
-    private static PrintStream ps;
-    private static OutputStream os;
-    private static InputStream is;
-    private static InputStreamReader isr;
-    private static BufferedReader br;
+    private JEditorPane recordsPane;
+    private JTextArea sendTextArea;
+    private JEditorPane onlineUserPane;
+    private PrintStream ps;
+    private User toUser;
 
-
-    private static Main frame;
-    private static JEditorPane recordsPane;
-    private static Socket cSocket = null;
-    private static JTextArea sendTextArea;
-    private static JEditorPane onlineUserPane;
-
-    static void safeExit(Socket socket) {
-        try {
-            if (socket != null) socket.close();
-            if (ps != null) ps.close();
-            if (os != null) os.close();
-            if (is != null) is.close();
-            if (isr != null) isr.close();
-            if (br != null) br.close();
-            System.exit(0);
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
-    }
 
     HyperlinkListener hyperlinkListener = new HyperlinkListener() {
         @Override
@@ -52,18 +34,7 @@ public class Main extends JFrame {
             if (e.getEventType() == HyperlinkEvent.EventType.ACTIVATED) {
                 try {
                     String x = e.getDescription();
-                    if (x.startsWith("user://")) {
-                        String toUser = x.replace("user://", "");
-                        sendTextArea.setText(sendTextArea.getText() + " @" + toUser);
-                        EventQueue.invokeLater(() -> {
-                            try {
-                                PrivateChatFrame privateChatFrame = new PrivateChatFrame(ps, toUser);
-                                privateChatFrame.setVisible(true);
-                            } catch (Exception e1) {
-                                e1.printStackTrace();
-                            }
-                        });
-                    } else if (x.startsWith("img://")) {
+                    if (x.startsWith("img://")) {
                         String imgPath = x.replace("img://", "");
                         EventQueue.invokeLater(() -> {
                             try {
@@ -98,7 +69,7 @@ public class Main extends JFrame {
         }
     };
 
-    public static boolean handle_message(String json) throws Exception {
+    public boolean handle_message(String json) throws Exception {
         if (json == null) {
             return false;
         }
@@ -118,7 +89,7 @@ public class Main extends JFrame {
                 }
                 break;
             case "img":
-                recordsPane.setText(Records.parseImg(msg, frame));
+                recordsPane.setText(Records.parseImg(msg, this));
                 break;
             case "file":
                 recordsPane.setText(Records.parseFile(msg));
@@ -170,97 +141,12 @@ public class Main extends JFrame {
 
     }
 
-    public static void main(String[] args) {
-        EventQueue.invokeLater(() -> {
-            try {
-                frame = new Main();
-                frame.addWindowListener(new java.awt.event.WindowAdapter() {
-                    @Override
-                    public void windowClosing(java.awt.event.WindowEvent windowEvent) {
-                        if (JOptionPane.showConfirmDialog(frame, "Are you sure you want to close this window?",
-                                "Close Window?", JOptionPane.YES_NO_OPTION,
-                                JOptionPane.QUESTION_MESSAGE) == JOptionPane.YES_OPTION) {
-                            safeExit(cSocket);
-                        }
-                    }
-                });
-                frame.setVisible(true);
-            } catch (Exception e) {
-                e.printStackTrace();
-            }
-        });
 
-        String userName = JOptionPane.showInputDialog(frame, "请输入用户名:");
-        if (userName == null) {
-            // 用户点击了取消
-            frame.dispose();
-            return;
-        }
-        while (userName.isEmpty()) {
-            userName = JOptionPane.showInputDialog(frame, "请重新输入用户名:");
-            if (userName == null) {
-                // 用户点击了取消
-                frame.dispose();
-                return;
-            }
-        }
-        userName = userName.strip();
-        Config.getInstance().setUserName(userName);
+    public PrivateChatFrame(PrintStream ps, String toUserJson) {
+        this.ps = ps;
+        this.toUser = JSON.parseObject(toUserJson, User.class);
 
-        String password = JOptionPane.showInputDialog(frame, "请输入密码:");
-        if (password == null) {
-            frame.dispose();
-            return;
-        }
-        while (password.isEmpty()) {
-            password = JOptionPane.showInputDialog(frame, "请重新输入密码:");
-            if (password == null) {
-                frame.dispose();
-                return;
-            }
-        }
-        frame.setTitle(userName + " | " + Config.getInstance().getAppName());
-
-        try {
-            cSocket = new Socket(Config.getInstance().getServerHost(), Config.getInstance().getServerPort());
-            os = cSocket.getOutputStream();
-            ps = new PrintStream(os);
-            is = cSocket.getInputStream();
-            isr = new InputStreamReader(is);
-            br = new BufferedReader(isr);
-
-            System.out.println(userName + "向服务器发送用户名密码");
-            ps.println(userName + ";" + password);
-            String ack = br.readLine();
-            if (ack.equals("ack_" + userName)) {
-                System.out.println("服务器响应：" + ack);
-                ps.println("ack_" + userName);
-                System.out.println("连接服务器成功");
-                String json;
-                while ((json = br.readLine()) != null) {
-                    if (handle_message(json)) {
-                        System.out.println("handled.");
-                    } else {
-                        JOptionPane.showMessageDialog(frame, json);
-                    }
-                }
-            } else if (ack.equals("403")) {
-                JOptionPane.showMessageDialog(frame, "密码错误", "Error", JOptionPane.ERROR_MESSAGE);
-                safeExit(cSocket);
-            } else {
-                System.out.println("expect ack_, actually: " + ack);
-            }
-        } catch (Exception e) {
-            e.printStackTrace();
-            JOptionPane.showMessageDialog(frame, e.getMessage(), "Exception", JOptionPane.ERROR_MESSAGE);
-        } finally {
-            safeExit(cSocket);
-        }
-    }
-
-    public Main() {
-        setTitle(Config.getInstance().getAppName());
-        setDefaultCloseOperation(JFrame.DO_NOTHING_ON_CLOSE);
+        setTitle("与 " + toUser.userName + " 私聊");
         setBounds(100, 100, 700, 500);
         Dimension d = Toolkit.getDefaultToolkit().getScreenSize();
         int width = Math.max(d.width / 2, getSize().width);
@@ -327,5 +213,17 @@ public class Main extends JFrame {
         JButton sendButton = new JButton("Send");
         sendButton.addActionListener(e -> sendText());
         controlPanel.add(sendButton, BorderLayout.EAST);
+        this.addWindowListener(new WindowAdapter() {
+            @Override
+            public void windowClosing(WindowEvent windowEvent) {
+                dispose();
+            }
+
+            @Override
+            public void windowStateChanged(WindowEvent e) {
+                super.windowStateChanged(e);
+                repaint();
+            }
+        });
     }
 }
