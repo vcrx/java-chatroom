@@ -1,8 +1,10 @@
 package Client;
 
-import java.awt.*;
-import java.io.*;
-import java.net.Socket;
+import Common.Message;
+import Common.User;
+import Utils.ByteUtils;
+import Utils.FileUtils;
+import com.alibaba.fastjson.JSON;
 
 import javax.swing.*;
 import javax.swing.border.EmptyBorder;
@@ -10,23 +12,40 @@ import javax.swing.event.HyperlinkEvent;
 import javax.swing.event.HyperlinkListener;
 import javax.swing.filechooser.FileNameExtensionFilter;
 import javax.swing.text.DefaultCaret;
-
-import Common.User;
-import Utils.ByteUtils;
-import Utils.FileUtils;
-import Utils.SocketUtils;
-import Common.Message;
-import com.alibaba.fastjson.JSON;
+import java.awt.*;
+import java.io.*;
+import java.net.Socket;
 
 public class Main extends JFrame {
     private static final long serialVersionUID = 1L;
 
     private static PrintStream ps;
+    private static OutputStream os;
+    private static InputStream is;
+    private static InputStreamReader isr;
+    private static BufferedReader br;
+
+
     private static Main frame;
     private static JEditorPane recordsPane;
     private static Socket cSocket = null;
     private static JTextArea sendTextArea;
     private static JEditorPane onlineUserPane;
+
+    static void safeExit(Socket socket) {
+        try {
+            if (socket != null) socket.close();
+            if (ps != null) ps.close();
+            if (os != null) os.close();
+            if (is != null) is.close();
+            if (isr != null) isr.close();
+            if (br != null) br.close();
+            System.exit(0);
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+    }
+
     HyperlinkListener hyperlinkListener = new HyperlinkListener() {
         @Override
         public void hyperlinkUpdate(HyperlinkEvent e) {
@@ -155,7 +174,7 @@ public class Main extends JFrame {
                         if (JOptionPane.showConfirmDialog(frame, "Are you sure you want to close this window?",
                                 "Close Window?", JOptionPane.YES_NO_OPTION,
                                 JOptionPane.QUESTION_MESSAGE) == JOptionPane.YES_OPTION) {
-                            SocketUtils.safeExit(cSocket);
+                            safeExit(cSocket);
                         }
                     }
                 });
@@ -167,16 +186,19 @@ public class Main extends JFrame {
 
         String userName = JOptionPane.showInputDialog(frame, "请输入用户名:");
         if (userName == null) {
+            // 用户点击了取消
             frame.dispose();
             return;
         }
         while (userName.isEmpty()) {
             userName = JOptionPane.showInputDialog(frame, "请重新输入用户名:");
             if (userName == null) {
+                // 用户点击了取消
                 frame.dispose();
                 return;
             }
         }
+        userName = userName.strip();
         Config.getInstance().setUserName(userName);
 
         String password = JOptionPane.showInputDialog(frame, "请输入密码:");
@@ -191,25 +213,25 @@ public class Main extends JFrame {
                 return;
             }
         }
-        frame.setTitle(Config.getInstance().getAppName() + " - User：" + userName);
+        frame.setTitle(userName + " | " + Config.getInstance().getAppName());
 
         try {
             cSocket = new Socket(Config.getInstance().getServerHost(), Config.getInstance().getServerPort());
-            OutputStream os = cSocket.getOutputStream();
-            InputStream is = cSocket.getInputStream();
+            os = cSocket.getOutputStream();
             ps = new PrintStream(os);
-            InputStreamReader isr = new InputStreamReader(is);
-            BufferedReader br = new BufferedReader(isr);
+            is = cSocket.getInputStream();
+            isr = new InputStreamReader(is);
+            br = new BufferedReader(isr);
 
             System.out.println(userName + "向服务器发送用户名密码");
             ps.println(userName + ";" + password);
             String ack = br.readLine();
-            if (ack.equals("ack" + userName)) {
+            if (ack.equals("ack_" + userName)) {
                 System.out.println("服务器响应：" + ack);
-                ps.println("ack" + userName);
+                ps.println("ack_" + userName);
                 System.out.println("连接服务器成功");
-                while (true) {
-                    String json = br.readLine();
+                String json;
+                while ((json = br.readLine()) != null) {
                     if (handle_message(json)) {
                         System.out.println("handled.");
                     } else {
@@ -218,13 +240,15 @@ public class Main extends JFrame {
                 }
             } else if (ack.equals("403")) {
                 JOptionPane.showMessageDialog(frame, "密码错误", "Error", JOptionPane.ERROR_MESSAGE);
-                SocketUtils.safeExit(cSocket);
+                safeExit(cSocket);
+            } else {
+                System.out.println("expect ack_, actually: " + ack);
             }
         } catch (Exception e) {
             e.printStackTrace();
             JOptionPane.showMessageDialog(frame, e.getMessage(), "Exception", JOptionPane.ERROR_MESSAGE);
         } finally {
-            SocketUtils.safeExit(cSocket);
+            safeExit(cSocket);
         }
     }
 
@@ -298,6 +322,4 @@ public class Main extends JFrame {
         sendButton.addActionListener(e -> SendUtils.sendText());
         controlPanel.add(sendButton, BorderLayout.EAST);
     }
-
-
 }

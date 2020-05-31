@@ -1,7 +1,7 @@
 package Utils;
 
-import java.util.Date;
 import java.text.SimpleDateFormat;
+import java.util.Date;
 
 public class TimeUtils {
 	public static String parseTimeStamp(Long timeStamp) {

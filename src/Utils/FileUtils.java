@@ -2,13 +2,17 @@ package Utils;
 
 import Client.Config;
 
-import java.io.*;
+import javax.swing.*;
+import javax.swing.filechooser.FileNameExtensionFilter;
+import java.io.File;
+import java.io.FileOutputStream;
+import java.io.IOException;
+import java.io.OutputStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-
-import javax.swing.JFileChooser;
-import javax.swing.filechooser.FileNameExtensionFilter;
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
 
 public class FileUtils {
     public static File fileChooser(FileNameExtensionFilter filter, File file) {
@@ -56,8 +60,8 @@ public class FileUtils {
     }
 
     public static Path getTempDirectory() {
-        Path tempDir = Paths.get(System.getProperty("java.io.tmpdir") + "/chatroom/" + Config.getInstance().getUserName() + "/");
-        System.out.println(tempDir.toString());
+        String dir = String.valueOf(Config.getInstance().getUserName().hashCode()).toUpperCase();
+        Path tempDir = Paths.get(System.getProperty("java.io.tmpdir") + "/chatroom/" + dir + "/");
         File file = new File(tempDir.toString());
         if (!file.exists()) {
             if (!file.mkdirs()) return null;

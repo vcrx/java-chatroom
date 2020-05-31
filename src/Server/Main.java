@@ -1,20 +1,13 @@
 package Server;
 
-import java.io.BufferedReader;
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.InputStreamReader;
-import java.io.OutputStream;
-import java.io.PrintStream;
-import java.net.InetAddress;
+import Common.Message;
+import Common.User;
+import com.alibaba.fastjson.JSON;
+
+import java.io.*;
 import java.net.ServerSocket;
 import java.net.Socket;
 import java.util.ArrayList;
-
-import Common.Message;
-import Common.User;
-import Utils.SocketUtils;
-import com.alibaba.fastjson.JSON;
 
 public class Main {
     private final ArrayList<HandlerThread> sockets = new ArrayList<>();
@@ -29,9 +22,8 @@ public class Main {
         ServerSocket serverSocket = null;
         try {
             serverSocket = new ServerSocket(1002);
-            while (true) {
-                System.out.println("等待连接...");
-                Socket client = serverSocket.accept();
+            Socket client;
+            while ((client = serverSocket.accept()) != null) {
                 sockets.add(new HandlerThread(client));
             }
         } catch (Exception e) {
@@ -115,24 +107,23 @@ public class Main {
                 password = tmp[1];
                 System.out.println(userName + "：请求连接");
                 if (password.contains("a")) {
-                    send("ack" + userName);
+                    send("ack_" + userName);
                 } else {
                     send("403");
                     throw new Exception(userName + "password error");
                 }
                 String ack = br.readLine();
-                if (ack.equals("ack" + userName)) {
+                if (ack.equals("ack_" + userName)) {
                     System.out.println(userName + "：连接成功");
                     sendAll(JSON.toJSONString(new Message(getUser(), "join", getClientUsernames())));
                     showClientCount();
-                    while (true) {
-                        String str = br.readLine();
-                        if (str == null) {
-                            throw new Exception("receive null");
-                        }
-                        System.out.println("服务器收到消息：" + str);
-                        sendAll(str);
+                    String jsonString;
+                    while ((jsonString = br.readLine()) != null) {
+                        System.out.println("服务器收到消息：" + jsonString);
+                        sendAll(jsonString);
                     }
+                } else {
+                    System.out.println("expect ack_, actually: " + ack);
                 }
             } catch (Exception e) {
                 System.out.println(userName + " 捕获异常：");

@@ -26,9 +26,16 @@ public class Records {
 
     private static Element genUserA(User user) {
         Element a = new Element("a");
+        String userName = user.userName;
         a.attr("style", "font-weight:bold");
-        a.attr("href", "user://" + JSON.toJSONString(user));
-        a.append(user.userName);
+        if (user.userName.equals(Config.getInstance().getUserName())) {
+            userName += " (我)";
+            System.out.println(a.attr("style"));
+            a.attr("style", a.attr("style") + ";color:#00bea9");
+        } else {
+            a.attr("href", "user://" + JSON.toJSONString(user));
+        }
+        a.append(userName);
         return a;
     }
 
@@ -60,7 +67,7 @@ public class Records {
         Elements b = c.getElementsByTag("body");
         b.attr("style", "color:#192e4d;font-size:10px;word-wrap:break-word;white-space:normal;");
         Element ul = new Element("ul");
-        b.append("在线用户：");
+        b.append("当前在线 (" + msg.users.size() + "人) ：");
         ul.attr("style", "font-size:13px;padding:0;margin:14");
         for (User user : msg.users) {
             Element li = new Element("li");
@@ -81,7 +88,6 @@ public class Records {
         byte[] imgSrc = ByteUtils.decodeBase64StringToByte(msg.msg);
         imgSrc = ByteUtils.unGZip(imgSrc);
         URI path = Files.write(Paths.get(tempDir + "/" + msg.filename), imgSrc).toAbsolutePath().toUri();
-        System.out.println(frame.getSize().width);
         Element a = new Element("a");
         a.attr("href", "img://" + path);
         Element img = new Element("img");

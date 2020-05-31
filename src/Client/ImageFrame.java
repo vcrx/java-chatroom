@@ -16,7 +16,6 @@ public class ImageFrame extends JFrame {
     public void paint(Graphics g) {
         super.paint(g);
         if (imgUri != null) {
-            System.out.println(imgUri);
             String baseHtml = "<html><head></head>"
                     + "<body style='font-size:14px;word-wrap:break-word;white-space:normal;'>"
                     + "<div style='font-size:16px;margin-top:3px;'><img src='" + this.imgUri
