@@ -26,7 +26,8 @@ public class Main extends JFrame {
     private static BufferedReader br;
 
 
-    private static Main frame;
+    private static PrivateChatFrame privateChatFrame;
+    private static Main chatRoomFrame;
     private static JEditorPane recordsPane;
     private static Socket cSocket = null;
     private static JTextArea sendTextArea;
@@ -57,7 +58,7 @@ public class Main extends JFrame {
                         sendTextArea.setText(sendTextArea.getText() + " @" + toUser);
                         EventQueue.invokeLater(() -> {
                             try {
-                                PrivateChatFrame privateChatFrame = new PrivateChatFrame(ps, toUser);
+                                privateChatFrame = new PrivateChatFrame(ps, toUser);
                                 privateChatFrame.setVisible(true);
                             } catch (Exception e1) {
                                 e1.printStackTrace();
@@ -87,7 +88,6 @@ public class Main extends JFrame {
                         File file = FileUtils.fileChooser(null, new File(filename));
                         if (file != null) {
                             String filePath = file.getAbsolutePath();
-                            System.out.println(filePath);
                             FileUtils.saveContent(fileSrc, file);
                         }
                     }
@@ -118,7 +118,7 @@ public class Main extends JFrame {
                 }
                 break;
             case "img":
-                recordsPane.setText(Records.parseImg(msg, frame));
+                recordsPane.setText(Records.parseImg(msg, chatRoomFrame));
                 break;
             case "file":
                 recordsPane.setText(Records.parseFile(msg));
@@ -173,53 +173,53 @@ public class Main extends JFrame {
     public static void main(String[] args) {
         EventQueue.invokeLater(() -> {
             try {
-                frame = new Main();
-                frame.addWindowListener(new java.awt.event.WindowAdapter() {
+                chatRoomFrame = new Main();
+                chatRoomFrame.addWindowListener(new java.awt.event.WindowAdapter() {
                     @Override
                     public void windowClosing(java.awt.event.WindowEvent windowEvent) {
-                        if (JOptionPane.showConfirmDialog(frame, "Are you sure you want to close this window?",
-                                "Close Window?", JOptionPane.YES_NO_OPTION,
+                        if (JOptionPane.showConfirmDialog(null, "你确定要退出吗?",
+                                "退出?", JOptionPane.YES_NO_OPTION,
                                 JOptionPane.QUESTION_MESSAGE) == JOptionPane.YES_OPTION) {
                             safeExit(cSocket);
                         }
                     }
                 });
-                frame.setVisible(true);
+                chatRoomFrame.setVisible(true);
             } catch (Exception e) {
                 e.printStackTrace();
             }
         });
 
-        String userName = JOptionPane.showInputDialog(frame, "请输入用户名:");
+        String userName = JOptionPane.showInputDialog(chatRoomFrame, "请输入用户名:");
         if (userName == null) {
             // 用户点击了取消
-            frame.dispose();
+            chatRoomFrame.dispose();
             return;
         }
         while (userName.isEmpty()) {
-            userName = JOptionPane.showInputDialog(frame, "请重新输入用户名:");
+            userName = JOptionPane.showInputDialog(chatRoomFrame, "请重新输入用户名:");
             if (userName == null) {
                 // 用户点击了取消
-                frame.dispose();
+                chatRoomFrame.dispose();
                 return;
             }
         }
         userName = userName.strip();
         Config.getInstance().setUserName(userName);
 
-        String password = JOptionPane.showInputDialog(frame, "请输入密码:");
+        String password = JOptionPane.showInputDialog(chatRoomFrame, "请输入密码:");
         if (password == null) {
-            frame.dispose();
+            chatRoomFrame.dispose();
             return;
         }
         while (password.isEmpty()) {
-            password = JOptionPane.showInputDialog(frame, "请重新输入密码:");
+            password = JOptionPane.showInputDialog(chatRoomFrame, "请重新输入密码:");
             if (password == null) {
-                frame.dispose();
+                chatRoomFrame.dispose();
                 return;
             }
         }
-        frame.setTitle(userName + " | " + Config.getInstance().getAppName());
+        chatRoomFrame.setTitle(userName + " | " + Config.getInstance().getAppName());
 
         try {
             cSocket = new Socket(Config.getInstance().getServerHost(), Config.getInstance().getServerPort());
@@ -241,18 +241,18 @@ public class Main extends JFrame {
                     if (handle_message(json)) {
                         System.out.println("handled.");
                     } else {
-                        JOptionPane.showMessageDialog(frame, json);
+                        JOptionPane.showMessageDialog(null, json);
                     }
                 }
             } else if (ack.equals("403")) {
-                JOptionPane.showMessageDialog(frame, "密码错误", "Error", JOptionPane.ERROR_MESSAGE);
+                JOptionPane.showMessageDialog(null, "密码错误", "Error", JOptionPane.ERROR_MESSAGE);
                 safeExit(cSocket);
             } else {
                 System.out.println("expect ack_, actually: " + ack);
             }
         } catch (Exception e) {
             e.printStackTrace();
-            JOptionPane.showMessageDialog(frame, e.getMessage(), "Exception", JOptionPane.ERROR_MESSAGE);
+            JOptionPane.showMessageDialog(null, e.getMessage(), "Exception", JOptionPane.ERROR_MESSAGE);
         } finally {
             safeExit(cSocket);
         }

@@ -28,43 +28,38 @@ public class PrivateChatFrame extends JFrame {
     private User toUser;
 
 
-    HyperlinkListener hyperlinkListener = new HyperlinkListener() {
-        @Override
-        public void hyperlinkUpdate(HyperlinkEvent e) {
-            if (e.getEventType() == HyperlinkEvent.EventType.ACTIVATED) {
-                try {
-                    String x = e.getDescription();
-                    if (x.startsWith("img://")) {
-                        String imgPath = x.replace("img://", "");
-                        EventQueue.invokeLater(() -> {
-                            try {
-                                ImageFrame imgFrame = new ImageFrame(imgPath);
-                                imgFrame.setVisible(true);
-                            } catch (Exception e1) {
-                                e1.printStackTrace();
-                            }
-                        });
-                    } else if (x.startsWith("file://")) {
-                        String content = x.substring(7);
-                        int r = content.lastIndexOf(";");
-                        String filename = "";
-                        if (r != -1) {
-                            filename = content.substring(0, r);
-                            content = content.substring(r + 1);
+    HyperlinkListener hyperlinkListener = e -> {
+        if (e.getEventType() == HyperlinkEvent.EventType.ACTIVATED) {
+            try {
+                String x = e.getDescription();
+                if (x.startsWith("img://")) {
+                    String imgPath = x.replace("img://", "");
+                    EventQueue.invokeLater(() -> {
+                        try {
+                            ImageFrame imgFrame = new ImageFrame(imgPath);
+                            imgFrame.setVisible(true);
+                        } catch (Exception e1) {
+                            e1.printStackTrace();
                         }
-                        System.out.println(content);
-                        byte[] fileSrc = ByteUtils.decodeBase64StringToByte(content);
-                        fileSrc = ByteUtils.unGZip(fileSrc);
-                        File file = FileUtils.fileChooser(null, new File(filename));
-                        if (file != null) {
-                            String filePath = file.getAbsolutePath();
-                            System.out.println(filePath);
-                            FileUtils.saveContent(fileSrc, file);
-                        }
+                    });
+                } else if (x.startsWith("file://")) {
+                    String content = x.substring(7);
+                    int r = content.lastIndexOf(";");
+                    String filename = "";
+                    if (r != -1) {
+                        filename = content.substring(0, r);
+                        content = content.substring(r + 1);
                     }
-                } catch (Throwable t) {
-                    t.printStackTrace();
+                    byte[] fileSrc = ByteUtils.decodeBase64StringToByte(content);
+                    fileSrc = ByteUtils.unGZip(fileSrc);
+                    File file = FileUtils.fileChooser(null, new File(filename));
+                    if (file != null) {
+                        String filePath = file.getAbsolutePath();
+                        FileUtils.saveContent(fileSrc, file);
+                    }
                 }
+            } catch (Throwable t) {
+                t.printStackTrace();
             }
         }
     };

@@ -90,6 +90,15 @@ public class Main {
 
         }
 
+        public void sendToOne(String jsonString, User user) {
+            for (HandlerThread thread : sockets) {
+                if (thread.userName.equals(user.userName)) {
+                    thread.send(jsonString);
+                    break;
+                }
+            }
+        }
+
         public void run() {
             OutputStream os = null;
             InputStream is = null;
@@ -120,7 +129,12 @@ public class Main {
                     String jsonString;
                     while ((jsonString = br.readLine()) != null) {
                         System.out.println("服务器收到消息：" + jsonString);
-                        sendAll(jsonString);
+                        Message msg = JSON.parseObject(jsonString, Message.class);
+                        if (msg.toUser != null) {
+                            sendToOne(jsonString, msg.toUser);
+                        } else {
+                            sendAll(jsonString);
+                        }
                     }
                 } else {
                     System.out.println("expect ack_, actually: " + ack);

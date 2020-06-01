@@ -5,6 +5,7 @@ import java.util.List;
 
 public class Message {
     public User user;
+    public User toUser;
     public String msg;
     public String type; // text, event, file, img
     public List<User> users;

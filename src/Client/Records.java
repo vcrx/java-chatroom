@@ -30,7 +30,6 @@ public class Records {
         a.attr("style", "font-weight:bold");
         if (user.userName.equals(Config.getInstance().getUserName())) {
             userName += " (Œ“)";
-            System.out.println(a.attr("style"));
             a.attr("style", a.attr("style") + ";color:#00bea9");
         } else {
             a.attr("href", "user://" + JSON.toJSONString(user));
