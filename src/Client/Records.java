@@ -20,7 +20,7 @@ import javax.swing.*;
 public class Records {
     String baseHtml = "<html><head></head>"
             + "<body style='font-size:14px;word-wrap:break-word;white-space:normal;'>" + "</body></html>";
-    Document content = Jsoup.parse(baseHtml);
+    public Document content = Jsoup.parse(baseHtml);
     Elements body = content.getElementsByTag("body");
 
     private Element genUserA(User user) {
@@ -76,7 +76,6 @@ public class Records {
         b.append(ul.toString());
         return c.toString();
     }
-
 
     public String parseImg(Message msg, JFrame frame) throws Exception {
         Path tempDir = FileUtils.getTempDirectory();

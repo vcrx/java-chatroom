@@ -171,6 +171,8 @@ public class PrivateChatFrame extends JFrame {
                 repaint();
             }
         });
+
+        recordsPane.setText(rc.content.toString());
     }
 
     public PrivateChatFrame(PrintStream ps, User user) {

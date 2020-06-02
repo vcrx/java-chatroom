@@ -78,18 +78,6 @@ public class Main {
             }
         }
 
-        public void sendAll(String jsonString, boolean skipSender) {
-            if (!skipSender) {
-                sendAll(jsonString);
-            } else {
-                for (HandlerThread thread : sockets) {
-                    if (thread.userName.equals(this.userName)) continue;
-                    thread.send(jsonString);
-                }
-            }
-
-        }
-
         public void sendToOne(String jsonString, Message msg) {
             for (HandlerThread thread : sockets) {
                 if (thread.userName.equals(msg.fromUser.userName) || thread.userName.equals(msg.toUser.userName)) {
