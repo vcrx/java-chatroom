@@ -6,6 +6,7 @@ import java.awt.*;
 import java.awt.event.WindowAdapter;
 import java.awt.event.WindowEvent;
 
+
 public class ImageFrame extends JFrame {
     private static final long serialVersionUID = 1L;
     JPanel contentPane;

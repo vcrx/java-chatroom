@@ -71,9 +71,9 @@ public class Main extends JFrame {
                             }
                         });
                     } else if (x.startsWith("img://")) {
-                        LinkUtils.ImageHandler(x);
+                        LinkUtils.ShowImage(x);
                     } else if (x.startsWith("file://")) {
-                        LinkUtils.FileHandler(x);
+                        LinkUtils.SaveFileWithFilename(x);
                     }
                 } catch (Throwable t) {
                     t.printStackTrace();
@@ -185,7 +185,7 @@ public class Main extends JFrame {
                     @Override
                     public void windowClosing(java.awt.event.WindowEvent windowEvent) {
                         if (JOptionPane.showConfirmDialog(null, "你确定要退出吗?",
-                                "退出?", JOptionPane.YES_NO_OPTION,
+                                "退出聊天室", JOptionPane.YES_NO_OPTION,
                                 JOptionPane.QUESTION_MESSAGE) == JOptionPane.YES_OPTION) {
                             safeExit(cSocket);
                         }
@@ -257,6 +257,7 @@ public class Main extends JFrame {
         }
     }
 
+
     public Main() {
         setTitle(Config.getInstance().getAppName());
         setDefaultCloseOperation(JFrame.DO_NOTHING_ON_CLOSE);
@@ -267,7 +268,7 @@ public class Main extends JFrame {
         width = Math.min(width, d.width * 2 / 3);
         height = Math.min(height, d.height * 2 / 3);
         setSize(width, height);
-        setLocation(d.width / 2 - width / 2, new Random().nextInt(height) + 1);
+        setLocation(d.width / 2 - width / 2, new Random().nextInt(height / 2) + 1);
 
         JPanel contentPane = new JPanel();
         contentPane.setBorder(new EmptyBorder(5, 5, 5, 5));
@@ -282,6 +283,7 @@ public class Main extends JFrame {
         recordsPane.setEditable(false);
         recordsPane.setContentType("text/html");
         recordsPane.addHyperlinkListener(hyperlinkListener);
+        recordsPane.addMouseListener(new LinkUtils.HyperlinkMouseListener());
         DefaultCaret caret = (DefaultCaret) recordsPane.getCaret();
         caret.setUpdatePolicy(DefaultCaret.ALWAYS_UPDATE);
         upPanel.add(new JScrollPane(recordsPane), BorderLayout.CENTER);

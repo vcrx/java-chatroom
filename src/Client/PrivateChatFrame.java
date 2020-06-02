@@ -16,7 +16,8 @@ import javax.swing.text.DefaultCaret;
 import java.awt.*;
 import java.awt.event.WindowAdapter;
 import java.awt.event.WindowEvent;
-import java.io.*;
+import java.io.File;
+import java.io.PrintStream;
 import java.util.Random;
 
 public class PrivateChatFrame extends JFrame {
@@ -50,9 +51,9 @@ public class PrivateChatFrame extends JFrame {
                     String toUser = x.replace("user://", "");
                     sendTextArea.setText(sendTextArea.getText() + " @" + toUser);
                 } else if (x.startsWith("img://")) {
-                    LinkUtils.ImageHandler(x);
+                    LinkUtils.ShowImage(x);
                 } else if (x.startsWith("file://")) {
-                    LinkUtils.FileHandler(x);
+                    LinkUtils.SaveFileWithFilename(x);
                 }
             } catch (Throwable t) {
                 t.printStackTrace();
@@ -113,7 +114,7 @@ public class PrivateChatFrame extends JFrame {
         width = Math.min(width, d.width * 2 / 3);
         height = Math.min(height, d.height * 2 / 3);
         setSize(width, height);
-        setLocation(d.width / 2 - width / 2, new Random().nextInt(height) + 1);
+        setLocation(d.width / 2 - width / 2, new Random().nextInt(height / 2) + 1);
         try {
             UIManager.setLookAndFeel(UIManager.getSystemLookAndFeelClassName());
         } catch (ClassNotFoundException | InstantiationException | IllegalAccessException
@@ -134,6 +135,7 @@ public class PrivateChatFrame extends JFrame {
         recordsPane.setEditable(false);
         recordsPane.setContentType("text/html");
         recordsPane.addHyperlinkListener(hyperlinkListener);
+        recordsPane.addMouseListener(new LinkUtils.HyperlinkMouseListener());
         DefaultCaret caret = (DefaultCaret) recordsPane.getCaret();
         caret.setUpdatePolicy(DefaultCaret.ALWAYS_UPDATE);
         upPanel.add(new JScrollPane(recordsPane), BorderLayout.CENTER);

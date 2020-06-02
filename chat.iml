@@ -9,5 +9,6 @@
     <orderEntry type="sourceFolder" forTests="false" />
     <orderEntry type="library" name="jsoup-1.13.1" level="project" />
     <orderEntry type="library" name="fastjson-1.2.68" level="project" />
+    <orderEntry type="library" name="hutool-core-5.3.6" level="project" />
   </component>
 </module>

@@ -1,21 +1,22 @@
 package Client;
 
+import Common.Message;
+import Common.User;
+import Utils.ByteUtils;
+import Utils.FileUtils;
+import Utils.TimeUtils;
+import cn.hutool.core.util.EscapeUtil;
+import com.alibaba.fastjson.JSON;
+import org.jsoup.Jsoup;
+import org.jsoup.nodes.Document;
+import org.jsoup.nodes.Element;
+import org.jsoup.select.Elements;
+
+import javax.swing.*;
 import java.net.URI;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-
-import Utils.ByteUtils;
-import Utils.FileUtils;
-import Utils.TimeUtils;
-import Common.Message;
-import Common.User;
-import com.alibaba.fastjson.JSON;
-import org.jsoup.*;
-import org.jsoup.nodes.*;
-import org.jsoup.select.Elements;
-
-import javax.swing.*;
 
 public class Records {
     String baseHtml = "<html><head></head>"
@@ -33,7 +34,7 @@ public class Records {
         } else {
             a.attr("href", "user://" + JSON.toJSONString(user));
         }
-        a.append(userName);
+        a.append(EscapeUtil.escapeHtml4(userName));
         return a;
     }
 
@@ -45,8 +46,9 @@ public class Records {
     }
 
     public String parseText(Message msg) {
+        String text = EscapeUtil.escapeHtml4(msg.msg.replace("\n", "<br/>"));
         String build = genHeader(msg) +
-                "£º<br /><p style='font-size:16px;margin-top:3px;'>" + msg.msg.replace("\n", "<br/>") + "</p><br />";
+                "£º<br /><p style='font-size:16px;margin-top:3px;'>" + text + "</p><br />";
         body.append(build);
         return content.toString();
     }
