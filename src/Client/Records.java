@@ -1,6 +1,5 @@
 package Client;
 
-import java.io.IOException;
 import java.net.URI;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -19,12 +18,12 @@ import org.jsoup.select.Elements;
 import javax.swing.*;
 
 public class Records {
-    static String baseHtml = "<html><head></head>"
+    String baseHtml = "<html><head></head>"
             + "<body style='font-size:14px;word-wrap:break-word;white-space:normal;'>" + "</body></html>";
-    static Document content = Jsoup.parse(baseHtml);
-    static Elements body = content.getElementsByTag("body");
+    Document content = Jsoup.parse(baseHtml);
+    Elements body = content.getElementsByTag("body");
 
-    private static Element genUserA(User user) {
+    private Element genUserA(User user) {
         Element a = new Element("a");
         String userName = user.userName;
         a.attr("style", "font-weight:bold");
@@ -38,21 +37,21 @@ public class Records {
         return a;
     }
 
-    private static String genHeader(Message msg) {
+    private String genHeader(Message msg) {
         Element span = new Element("span");
         span.attr("style", "font-weight:bold; color: blue");
         span.append("[" + TimeUtils.parseTimeStamp(msg.timeStamp) + "]");
-        return span.toString() + genUserA(msg.user).toString();
+        return span.toString() + genUserA(msg.fromUser).toString();
     }
 
-    public static String parseText(Message msg) {
+    public String parseText(Message msg) {
         String build = genHeader(msg) +
                 "：<br /><p style='font-size:16px;margin-top:3px;'>" + msg.msg.replace("\n", "<br/>") + "</p><br />";
         body.append(build);
         return content.toString();
     }
 
-    public static String parseJoinOrLeft(Message msg) {
+    public String parseJoinOrLeft(Message msg) {
         String type = msg.msg.equals("left") ? "离开" : "加入";
 
         String build = genHeader(msg) + "<span style='font-weight:bold; color: red'>" + type + "了聊天室。</span><br />";
@@ -60,7 +59,7 @@ public class Records {
         return content.toString();
     }
 
-    public static String parseOnlineUsers(Message msg) {
+    public String parseOnlineUsers(Message msg) {
         String html = baseHtml;
         Document c = Jsoup.parse(html);
         Elements b = c.getElementsByTag("body");
@@ -79,7 +78,7 @@ public class Records {
     }
 
 
-    public static String parseImg(Message msg, JFrame frame) throws Exception {
+    public String parseImg(Message msg, JFrame frame) throws Exception {
         Path tempDir = FileUtils.getTempDirectory();
         if (tempDir == null) {
             throw new Exception("tempDir is null");
@@ -104,7 +103,7 @@ public class Records {
         return content.toString();
     }
 
-    public static String parseFile(Message msg) {
+    public String parseFile(Message msg) {
         Element a = new Element("a");
         a.attr("style", "font-weight:bold");
         a.attr("href", "file://" + msg.filename + ";" + msg.msg);

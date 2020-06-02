@@ -4,7 +4,7 @@ import java.util.Date;
 import java.util.List;
 
 public class Message {
-    public User user;
+    public User fromUser;
     public User toUser;
     public String msg;
     public String type; // text, event, file, img
@@ -19,27 +19,27 @@ public class Message {
     /**
      * 人数增加或减少时发送的消息
      *
-     * @param user  主角
+     * @param fromUser  主角
      * @param msg   是增加还是减少
      * @param users 目前用户列表
      */
-    public Message(User user, String msg, List<User> users) {
-        this.user = user;
+    public Message(User fromUser, String msg, List<User> users) {
+        this.fromUser = fromUser;
         this.msg = msg;
         this.type = "event";
         this.timeStamp = new Date().getTime();
         this.users = users;
     }
 
-    public Message(User user, String msg, String type) {
-        this.user = user;
+    public Message(User fromUser, String msg, String type) {
+        this.fromUser = fromUser;
         this.msg = msg;
         this.type = type;
         timeStamp = new Date().getTime();
     }
 
-    public Message(User user, String msg, String type, String filename) {
-        this(user, msg, type);
+    public Message(User fromUser, String msg, String type, String filename) {
+        this(fromUser, msg, type);
         this.filename = filename;
     }
 
@@ -48,7 +48,7 @@ public class Message {
      *
      * @param msg 消息内容
      */
-    public Message(User user, String msg) {
-        this(user, msg, "text");
+    public Message(User fromUser, String msg) {
+        this(fromUser, msg, "text");
     }
 }

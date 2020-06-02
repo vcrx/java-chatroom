@@ -90,11 +90,10 @@ public class Main {
 
         }
 
-        public void sendToOne(String jsonString, User user) {
+        public void sendToOne(String jsonString, Message msg) {
             for (HandlerThread thread : sockets) {
-                if (thread.userName.equals(user.userName)) {
+                if (thread.userName.equals(msg.fromUser.userName) || thread.userName.equals(msg.toUser.userName)) {
                     thread.send(jsonString);
-                    break;
                 }
             }
         }
@@ -131,7 +130,7 @@ public class Main {
                         System.out.println("服务器收到消息：" + jsonString);
                         Message msg = JSON.parseObject(jsonString, Message.class);
                         if (msg.toUser != null) {
-                            sendToOne(jsonString, msg.toUser);
+                            sendToOne(jsonString, msg);
                         } else {
                             sendAll(jsonString);
                         }

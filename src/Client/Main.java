@@ -4,6 +4,7 @@ import Common.Message;
 import Common.User;
 import Utils.ByteUtils;
 import Utils.FileUtils;
+import Utils.LinkUtils;
 import com.alibaba.fastjson.JSON;
 
 import javax.swing.*;
@@ -15,9 +16,12 @@ import javax.swing.text.DefaultCaret;
 import java.awt.*;
 import java.io.*;
 import java.net.Socket;
+import java.util.HashMap;
+import java.util.Random;
 
 public class Main extends JFrame {
     private static final long serialVersionUID = 1L;
+    private static final Records rc = new Records();
 
     private static PrintStream ps;
     private static OutputStream os;
@@ -26,12 +30,13 @@ public class Main extends JFrame {
     private static BufferedReader br;
 
 
-    private static PrivateChatFrame privateChatFrame;
     private static Main chatRoomFrame;
-    private static JEditorPane recordsPane;
     private static Socket cSocket = null;
-    private static JTextArea sendTextArea;
-    private static JEditorPane onlineUserPane;
+    private static final HashMap<String, PrivateChatFrame> privateChatFrameMap = new HashMap<>();
+    private final JEditorPane recordsPane;
+    private final JTextArea sendTextArea;
+    private final JEditorPane onlineUserPane;
+
 
     static void safeExit(Socket socket) {
         try {
@@ -54,42 +59,21 @@ public class Main extends JFrame {
                 try {
                     String x = e.getDescription();
                     if (x.startsWith("user://")) {
-                        String toUser = x.replace("user://", "");
-                        sendTextArea.setText(sendTextArea.getText() + " @" + toUser);
+                        String toUserString = x.replace("user://", "");
                         EventQueue.invokeLater(() -> {
                             try {
-                                privateChatFrame = new PrivateChatFrame(ps, toUser);
+                                User toUser = JSON.parseObject(toUserString, User.class);
+                                PrivateChatFrame privateChatFrame = new PrivateChatFrame(ps, toUser);
                                 privateChatFrame.setVisible(true);
+                                privateChatFrameMap.put(toUser.userName, privateChatFrame);
                             } catch (Exception e1) {
                                 e1.printStackTrace();
                             }
                         });
                     } else if (x.startsWith("img://")) {
-                        String imgPath = x.replace("img://", "");
-                        EventQueue.invokeLater(() -> {
-                            try {
-                                ImageFrame imgFrame = new ImageFrame(imgPath);
-                                imgFrame.setVisible(true);
-                            } catch (Exception e1) {
-                                e1.printStackTrace();
-                            }
-                        });
+                        LinkUtils.ImageHandler(x);
                     } else if (x.startsWith("file://")) {
-                        String content = x.substring(7);
-                        int r = content.lastIndexOf(";");
-                        String filename = "";
-                        if (r != -1) {
-                            filename = content.substring(0, r);
-                            content = content.substring(r + 1);
-                        }
-                        System.out.println(content);
-                        byte[] fileSrc = ByteUtils.decodeBase64StringToByte(content);
-                        fileSrc = ByteUtils.unGZip(fileSrc);
-                        File file = FileUtils.fileChooser(null, new File(filename));
-                        if (file != null) {
-                            String filePath = file.getAbsolutePath();
-                            FileUtils.saveContent(fileSrc, file);
-                        }
+                        LinkUtils.FileHandler(x);
                     }
                 } catch (Throwable t) {
                     t.printStackTrace();
@@ -98,33 +82,52 @@ public class Main extends JFrame {
         }
     };
 
-    public static boolean handle_message(String json) throws Exception {
+    public static void handle_message(String json) throws Exception {
         if (json == null) {
-            return false;
+            return;
         }
         System.out.println("handle: " + json);
         Message msg = JSON.parseObject(json, Message.class);
+        if (msg.toUser != null) {
+            String key = msg.fromUser.userName;
+            if (key.equals(Config.getInstance().getUserName())) {
+                key = msg.toUser.userName;
+            }
+            PrivateChatFrame pc = privateChatFrameMap.get(key);
+            if (pc == null) {
+                pc = new PrivateChatFrame(ps, msg.fromUser);
+                pc.setVisible(true);
+                privateChatFrameMap.put(key, pc);
+            }
+            if (!pc.isActive()) pc.setVisible(true);
+            pc.addRecords(msg);
+            return;
+        }
+        if (!chatRoomFrame.isActive()) chatRoomFrame.setVisible(true);
+        chatRoomFrame.addRecords(msg);
+    }
+
+    public void addRecords(Message msg) throws Exception {
         switch (msg.type) {
             case "text":
-                recordsPane.setText(Records.parseText(msg));
+                recordsPane.setText(rc.parseText(msg));
                 break;
             case "event":
                 switch (msg.msg) {
                     case "join":
                     case "left":
-                        recordsPane.setText(Records.parseJoinOrLeft(msg));
-                        onlineUserPane.setText(Records.parseOnlineUsers(msg));
+                        recordsPane.setText(rc.parseJoinOrLeft(msg));
+                        onlineUserPane.setText(rc.parseOnlineUsers(msg));
                         break;
                 }
                 break;
             case "img":
-                recordsPane.setText(Records.parseImg(msg, chatRoomFrame));
+                recordsPane.setText(rc.parseImg(msg, chatRoomFrame));
                 break;
             case "file":
-                recordsPane.setText(Records.parseFile(msg));
+                recordsPane.setText(rc.parseFile(msg));
                 break;
         }
-        return true;
     }
 
     private User getUser() {
@@ -139,7 +142,6 @@ public class Main extends JFrame {
         String jsonString = JSON.toJSONString(new Message(getUser(), text));
         ps.println(jsonString);
         sendTextArea.setText("");
-
     }
 
     private void _sendFile(File file, String type) {
@@ -159,7 +161,6 @@ public class Main extends JFrame {
         if (file != null) {
             _sendFile(file, "file");
         }
-
     }
 
     public void sendImg() {
@@ -167,10 +168,16 @@ public class Main extends JFrame {
         if (file != null) {
             _sendFile(file, "img");
         }
-
     }
 
     public static void main(String[] args) {
+        try {
+            UIManager.setLookAndFeel(UIManager.getSystemLookAndFeelClassName());
+        } catch (ClassNotFoundException | InstantiationException | IllegalAccessException
+                | UnsupportedLookAndFeelException e) {
+            e.printStackTrace();
+        }
+
         EventQueue.invokeLater(() -> {
             try {
                 chatRoomFrame = new Main();
@@ -189,37 +196,35 @@ public class Main extends JFrame {
                 e.printStackTrace();
             }
         });
+        JPanel panel = new JPanel(new BorderLayout(5, 5));
+        JPanel label = new JPanel(new GridLayout(0, 1, 2, 2));
+        label.add(new JLabel("用户名：", SwingConstants.RIGHT));
+        label.add(new JLabel("密  码：", SwingConstants.RIGHT));
+        panel.add(label, BorderLayout.WEST);
 
-        String userName = JOptionPane.showInputDialog(chatRoomFrame, "请输入用户名:");
-        if (userName == null) {
-            // 用户点击了取消
-            chatRoomFrame.dispose();
-            return;
-        }
-        while (userName.isEmpty()) {
-            userName = JOptionPane.showInputDialog(chatRoomFrame, "请重新输入用户名:");
-            if (userName == null) {
-                // 用户点击了取消
+        JPanel controls = new JPanel(new GridLayout(0, 1, 2, 2));
+        JTextField userNameField = new JTextField();
+        controls.add(userNameField);
+        JPasswordField passwordField = new JPasswordField();
+        controls.add(passwordField);
+        panel.add(controls, BorderLayout.CENTER);
+
+        String username = "";
+        String password = "";
+        while (password.isEmpty() || username.isEmpty()) {
+            int s = JOptionPane.showConfirmDialog(
+                    chatRoomFrame, panel, "登录", JOptionPane.OK_CANCEL_OPTION);
+            if (s != JOptionPane.OK_OPTION) {
+                // 用户点击了取消或关闭
                 chatRoomFrame.dispose();
                 return;
             }
+            username = userNameField.getText().strip();
+            password = String.valueOf(passwordField.getPassword()).strip();
         }
-        userName = userName.strip();
-        Config.getInstance().setUserName(userName);
 
-        String password = JOptionPane.showInputDialog(chatRoomFrame, "请输入密码:");
-        if (password == null) {
-            chatRoomFrame.dispose();
-            return;
-        }
-        while (password.isEmpty()) {
-            password = JOptionPane.showInputDialog(chatRoomFrame, "请重新输入密码:");
-            if (password == null) {
-                chatRoomFrame.dispose();
-                return;
-            }
-        }
-        chatRoomFrame.setTitle(userName + " | " + Config.getInstance().getAppName());
+        Config.getInstance().setUserName(username);
+        chatRoomFrame.setTitle(username + " | " + Config.getInstance().getAppName());
 
         try {
             cSocket = new Socket(Config.getInstance().getServerHost(), Config.getInstance().getServerPort());
@@ -229,26 +234,20 @@ public class Main extends JFrame {
             isr = new InputStreamReader(is);
             br = new BufferedReader(isr);
 
-            System.out.println(userName + "向服务器发送用户名密码");
-            ps.println(userName + ";" + password);
+            System.out.println(username + "向服务器发送用户名密码");
+            ps.println(username + ";" + password);
             String ack = br.readLine();
-            if (ack.equals("ack_" + userName)) {
+            if (ack.equals("ack_" + username)) {
                 System.out.println("服务器响应：" + ack);
-                ps.println("ack_" + userName);
+                ps.println("ack_" + username);
                 System.out.println("连接服务器成功");
                 String json;
                 while ((json = br.readLine()) != null) {
-                    if (handle_message(json)) {
-                        System.out.println("handled.");
-                    } else {
-                        JOptionPane.showMessageDialog(null, json);
-                    }
+                    handle_message(json);
+                    System.out.println("handled.");
                 }
             } else if (ack.equals("403")) {
-                JOptionPane.showMessageDialog(null, "密码错误", "Error", JOptionPane.ERROR_MESSAGE);
-                safeExit(cSocket);
-            } else {
-                System.out.println("expect ack_, actually: " + ack);
+                JOptionPane.showMessageDialog(null, "用户名或密码错误", "登录错误", JOptionPane.ERROR_MESSAGE);
             }
         } catch (Exception e) {
             e.printStackTrace();
@@ -268,13 +267,7 @@ public class Main extends JFrame {
         width = Math.min(width, d.width * 2 / 3);
         height = Math.min(height, d.height * 2 / 3);
         setSize(width, height);
-        setLocation(d.width / 2 - width / 2, 0);
-        try {
-            UIManager.setLookAndFeel(UIManager.getSystemLookAndFeelClassName());
-        } catch (ClassNotFoundException | InstantiationException | IllegalAccessException
-                | UnsupportedLookAndFeelException e) {
-            e.printStackTrace();
-        }
+        setLocation(d.width / 2 - width / 2, new Random().nextInt(height) + 1);
 
         JPanel contentPane = new JPanel();
         contentPane.setBorder(new EmptyBorder(5, 5, 5, 5));
