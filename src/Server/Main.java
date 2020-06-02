@@ -1,7 +1,8 @@
 package Server;
 
-import Common.Message;
-import Common.User;
+import Model.Message;
+import Model.User;
+import cn.hutool.core.io.IoUtil;
 import com.alibaba.fastjson.JSON;
 
 import java.io.*;
@@ -134,16 +135,13 @@ public class Main {
                 sockets.remove(this);
                 showClientCount();
                 sendAll(JSON.toJSONString(new Message(getUser(), "left", getClientUsernames())));
-                try {
-                    if (socket != null) socket.close();
-                    if (os != null) os.close();
-                    if (is != null) is.close();
-                    if (ps != null) ps.close();
-                    if (isr != null) isr.close();
-                    if (br != null) br.close();
-                } catch (Exception e) {
-                    e.printStackTrace();
-                }
+
+                IoUtil.close(socket);
+                IoUtil.close(os);
+                IoUtil.close(is);
+                IoUtil.close(ps);
+                IoUtil.close(isr);
+                IoUtil.close(br);
             }
         }
     }

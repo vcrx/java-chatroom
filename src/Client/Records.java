@@ -1,10 +1,11 @@
 package Client;
 
-import Common.Message;
-import Common.User;
+import Model.Message;
+import Model.User;
+import Constants.LinkPrefix;
 import Utils.ByteUtils;
 import Utils.FileUtils;
-import Utils.TimeUtils;
+import cn.hutool.core.date.DateUtil;
 import cn.hutool.core.util.EscapeUtil;
 import com.alibaba.fastjson.JSON;
 import org.jsoup.Jsoup;
@@ -17,10 +18,12 @@ import java.net.URI;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.Date;
 
 public class Records {
-    String baseHtml = "<html><head></head>"
-            + "<body style='font-size:14px;word-wrap:break-word;white-space:normal;'>" + "</body></html>";
+    String baseHtml = "<html>"
+            + "<body style='font-size:14px;word-wrap:break-word;white-space:normal;'></body>"
+            + "</html>";
     public Document content = Jsoup.parse(baseHtml);
     Elements body = content.getElementsByTag("body");
 
@@ -32,7 +35,7 @@ public class Records {
             userName += " (我)";
             a.attr("style", a.attr("style") + ";color:#00bea9");
         } else {
-            a.attr("href", "user://" + JSON.toJSONString(user));
+            a.attr("href", LinkPrefix.USER + JSON.toJSONString(user));
         }
         a.append(EscapeUtil.escapeHtml4(userName));
         return a;
@@ -41,7 +44,7 @@ public class Records {
     private String genHeader(Message msg) {
         Element span = new Element("span");
         span.attr("style", "font-weight:bold; color: blue");
-        span.append("[" + TimeUtils.parseTimeStamp(msg.timeStamp) + "]");
+        span.append("[" + DateUtil.format(new Date(msg.timeStamp), "yyyy-MM-dd HH:mm:ss") + "]");
         return span.toString() + genUserA(msg.fromUser).toString();
     }
 
@@ -88,7 +91,7 @@ public class Records {
         imgSrc = ByteUtils.unGZip(imgSrc);
         URI path = Files.write(Paths.get(tempDir + "/" + msg.filename), imgSrc).toAbsolutePath().toUri();
         Element a = new Element("a");
-        a.attr("href", "img://" + path);
+        a.attr("href", LinkPrefix.IMAGE + path);
         Element img = new Element("img");
         img.attr("src", String.valueOf(path));
         img.attr("alt", "无法显示图片");
@@ -107,7 +110,7 @@ public class Records {
     public String parseFile(Message msg) {
         Element a = new Element("a");
         a.attr("style", "font-weight:bold");
-        a.attr("href", "file://" + msg.filename + ";" + msg.msg);
+        a.attr("href", LinkPrefix.FILE + msg.filename + ";" + msg.msg);
         a.append(msg.filename);
         String build = genHeader(msg) +
                 "：<br /><div style='font-size:20px;margin-top:3px;'>" +

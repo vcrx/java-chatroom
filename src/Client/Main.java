@@ -1,10 +1,14 @@
 package Client;
 
-import Common.Message;
-import Common.User;
+import Constants.MessageType;
+import Model.Message;
+import Model.User;
+import Constants.LinkPrefix;
 import Utils.ByteUtils;
 import Utils.FileUtils;
 import Utils.LinkUtils;
+import cn.hutool.core.io.IoUtil;
+import cn.hutool.core.util.StrUtil;
 import com.alibaba.fastjson.JSON;
 
 import javax.swing.*;
@@ -39,17 +43,13 @@ public class Main extends JFrame {
 
 
     static void safeExit(Socket socket) {
-        try {
-            if (socket != null) socket.close();
-            if (ps != null) ps.close();
-            if (os != null) os.close();
-            if (is != null) is.close();
-            if (isr != null) isr.close();
-            if (br != null) br.close();
-            System.exit(0);
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
+        IoUtil.close(socket);
+        IoUtil.close(os);
+        IoUtil.close(is);
+        IoUtil.close(ps);
+        IoUtil.close(isr);
+        IoUtil.close(br);
+        System.exit(0);
     }
 
     HyperlinkListener hyperlinkListener = new HyperlinkListener() {
@@ -58,8 +58,8 @@ public class Main extends JFrame {
             if (e.getEventType() == HyperlinkEvent.EventType.ACTIVATED) {
                 try {
                     String x = e.getDescription();
-                    if (x.startsWith("user://")) {
-                        String toUserString = x.replace("user://", "");
+                    if (x.startsWith(LinkPrefix.USER)) {
+                        String toUserString = StrUtil.removePrefix(x, LinkPrefix.USER);
                         EventQueue.invokeLater(() -> {
                             try {
                                 User toUser = JSON.parseObject(toUserString, User.class);
@@ -70,9 +70,9 @@ public class Main extends JFrame {
                                 e1.printStackTrace();
                             }
                         });
-                    } else if (x.startsWith("img://")) {
+                    } else if (x.startsWith(LinkPrefix.IMAGE)) {
                         LinkUtils.ShowImage(x);
-                    } else if (x.startsWith("file://")) {
+                    } else if (x.startsWith(LinkPrefix.FILE)) {
                         LinkUtils.SaveFileWithFilename(x);
                     }
                 } catch (Throwable t) {
@@ -109,10 +109,10 @@ public class Main extends JFrame {
 
     public void addRecords(Message msg) throws Exception {
         switch (msg.type) {
-            case "text":
+            case MessageType.TEXT:
                 recordsPane.setText(rc.parseText(msg));
                 break;
-            case "event":
+            case MessageType.EVENT:
                 switch (msg.msg) {
                     case "join":
                     case "left":
@@ -121,10 +121,10 @@ public class Main extends JFrame {
                         break;
                 }
                 break;
-            case "img":
+            case MessageType.IMAGE:
                 recordsPane.setText(rc.parseImg(msg, chatRoomFrame));
                 break;
-            case "file":
+            case MessageType.FILE:
                 recordsPane.setText(rc.parseFile(msg));
                 break;
         }
@@ -159,14 +159,14 @@ public class Main extends JFrame {
     public void sendFile() {
         File file = FileUtils.fileChooser(null, null);
         if (file != null) {
-            _sendFile(file, "file");
+            _sendFile(file, MessageType.FILE);
         }
     }
 
     public void sendImg() {
         File file = FileUtils.fileChooser(new FileNameExtensionFilter("ͼƬ", "jpg", "jpeg", "png", "gif"), null);
         if (file != null) {
-            _sendFile(file, "img");
+            _sendFile(file, MessageType.IMAGE);
         }
     }
 

@@ -1,7 +1,9 @@
 package Client;
 
-import Common.Message;
-import Common.User;
+import Constants.MessageType;
+import Model.Message;
+import Model.User;
+import Constants.LinkPrefix;
 import Utils.ByteUtils;
 import Utils.FileUtils;
 import Utils.LinkUtils;
@@ -31,13 +33,13 @@ public class PrivateChatFrame extends JFrame {
 
     public void addRecords(Message msg) throws Exception {
         switch (msg.type) {
-            case "text":
+            case MessageType.TEXT:
                 recordsPane.setText(rc.parseText(msg));
                 break;
-            case "img":
+            case MessageType.IMAGE:
                 recordsPane.setText(rc.parseImg(msg, this));
                 break;
-            case "file":
+            case MessageType.FILE:
                 recordsPane.setText(rc.parseFile(msg));
                 break;
         }
@@ -47,12 +49,12 @@ public class PrivateChatFrame extends JFrame {
         if (e.getEventType() == HyperlinkEvent.EventType.ACTIVATED) {
             try {
                 String x = e.getDescription();
-                if (x.startsWith("user://")) {
-                    String toUser = x.replace("user://", "");
+                if (x.startsWith(LinkPrefix.USER)) {
+                    String toUser = x.replace(LinkPrefix.USER, "");
                     sendTextArea.setText(sendTextArea.getText() + " @" + toUser);
-                } else if (x.startsWith("img://")) {
+                } else if (x.startsWith(LinkPrefix.IMAGE)) {
                     LinkUtils.ShowImage(x);
-                } else if (x.startsWith("file://")) {
+                } else if (x.startsWith(LinkPrefix.FILE)) {
                     LinkUtils.SaveFileWithFilename(x);
                 }
             } catch (Throwable t) {
@@ -94,14 +96,14 @@ public class PrivateChatFrame extends JFrame {
     public void sendFile() {
         File file = FileUtils.fileChooser(null, null);
         if (file != null) {
-            _sendFile(file, "file");
+            _sendFile(file, MessageType.FILE);
         }
     }
 
     public void sendImg() {
         File file = FileUtils.fileChooser(new FileNameExtensionFilter("ͼƬ", "jpg", "jpeg", "png", "gif"), null);
         if (file != null) {
-            _sendFile(file, "img");
+            _sendFile(file, MessageType.IMAGE);
         }
     }
 

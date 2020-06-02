@@ -1,4 +1,6 @@
-package Common;
+package Model;
+
+import Constants.MessageType;
 
 import java.util.Date;
 import java.util.List;
@@ -26,7 +28,7 @@ public class Message {
     public Message(User fromUser, String msg, List<User> users) {
         this.fromUser = fromUser;
         this.msg = msg;
-        this.type = "event";
+        this.type = MessageType.EVENT;
         this.timeStamp = new Date().getTime();
         this.users = users;
     }
@@ -49,6 +51,6 @@ public class Message {
      * @param msg ÏûÏ¢ÄÚÈİ
      */
     public Message(User fromUser, String msg) {
-        this(fromUser, msg, "text");
+        this(fromUser, msg, MessageType.TEXT);
     }
 }

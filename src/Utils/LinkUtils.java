@@ -1,7 +1,9 @@
 package Utils;
 
 import Client.ImageFrame;
+import Constants.LinkPrefix;
 import cn.hutool.core.io.FileTypeUtil;
+import cn.hutool.core.util.StrUtil;
 
 import javax.swing.*;
 import javax.swing.text.AttributeSet;
@@ -21,7 +23,7 @@ import java.nio.file.Paths;
 
 public class LinkUtils {
     public static void SaveFileWithFilename(String fileLink) {
-        String content = fileLink.substring(7);
+        String content = StrUtil.removePrefix(fileLink, LinkPrefix.FILE);
         int r = content.lastIndexOf(";");
         String filename = "";
         if (r != -1) {
@@ -37,10 +39,10 @@ public class LinkUtils {
     }
 
     public static void SaveImage(String imageLink) throws MalformedURLException, URISyntaxException {
-        String imgPath = imageLink.replace("img://", "");
+        String imgPath = StrUtil.removePrefix(imageLink, LinkPrefix.IMAGE);
         byte[] fileSrc = FileUtils.readContent(Paths.get(new URL(imgPath).toURI()).toAbsolutePath().toString());
         String type = FileTypeUtil.getType(new ByteArrayInputStream(fileSrc));
-        File file = FileUtils.fileChooser(null, new File("file." + type));
+        File file = FileUtils.fileChooser(null, new File("image." + type));
         if (file != null) {
             FileUtils.saveContent(fileSrc, file);
         }
@@ -53,13 +55,13 @@ public class LinkUtils {
                 // BUTTON3 == ÓÒ¼üµã»÷
                 String link = LinkUtils.getHyperlinkHref(e);
                 if (link == null) return;
-                if (link.startsWith("img://")) {
+                if (link.startsWith(LinkPrefix.IMAGE)) {
                     try {
                         LinkUtils.SaveImage(link);
                     } catch (MalformedURLException | URISyntaxException malformedURLException) {
                         malformedURLException.printStackTrace();
                     }
-                } else if (link.startsWith("file://")) {
+                } else if (link.startsWith(LinkPrefix.FILE)) {
                     LinkUtils.SaveFileWithFilename(link);
                 }
             }
@@ -67,7 +69,7 @@ public class LinkUtils {
     }
 
     public static void ShowImage(String imageLink) {
-        String imgPath = imageLink.replace("img://", "");
+        String imgPath = StrUtil.removePrefix(imageLink, LinkPrefix.IMAGE);
         EventQueue.invokeLater(() -> {
             try {
                 ImageFrame imgFrame = new ImageFrame(imgPath);

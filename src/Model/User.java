@@ -1,4 +1,4 @@
-package Common;
+package Model;
 
 public class User {
     public String userName;
