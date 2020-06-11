@@ -1,14 +1,14 @@
 package Client;
 
+import Model.User;
+
 public class Config {
     private static final Config instance = new Config();
 
-
-    public final String AppName = "ÍøÉÏ³åÀËÁÄÌìÊÒ";
+    private final String AppName = "ÍøÉÏ³åÀËÁÄÌìÊÒ";
     private final String SERVER_HOST = "localhost";
     private final int SERVER_PORT = 1002;
     private String userName;
-
 
     private Config() {
     }
@@ -19,6 +19,10 @@ public class Config {
 
     public String getUserName() {
         return userName;
+    }
+
+    public User getUser() {
+        return new User(getUserName());
     }
 
     public int getServerPort() {

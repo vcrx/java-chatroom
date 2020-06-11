@@ -1,5 +1,6 @@
 package Server;
 
+import Exceptions.PasswordError;
 import Model.Message;
 import Model.User;
 import cn.hutool.core.io.IoUtil;
@@ -92,6 +93,7 @@ public class Main {
             InputStream is = null;
             InputStreamReader isr = null;
             BufferedReader br = null;
+            boolean isPasswordError = false;
             try {
                 os = socket.getOutputStream();
                 ps = new PrintStream(os);
@@ -107,7 +109,7 @@ public class Main {
                     send("ack_" + userName);
                 } else {
                     send("403");
-                    throw new Exception(userName + "password error");
+                    throw new PasswordError(userName + "password error");
                 }
                 String ack = br.readLine();
                 if (ack.equals("ack_" + userName)) {
@@ -127,6 +129,10 @@ public class Main {
                 } else {
                     System.out.println("expect ack_, actually: " + ack);
                 }
+            } catch (PasswordError e) {
+                System.out.println(userName + " 密码错误");
+                isPasswordError = true;
+                e.printStackTrace();
             } catch (Exception e) {
                 System.out.println(userName + " 捕获异常：");
                 e.printStackTrace();
@@ -134,7 +140,8 @@ public class Main {
                 System.out.println("清理 " + userName);
                 sockets.remove(this);
                 showClientCount();
-                sendAll(JSON.toJSONString(new Message(getUser(), "left", getClientUsernames())));
+                if (!isPasswordError)
+                    sendAll(JSON.toJSONString(new Message(getUser(), "left", getClientUsernames())));
 
                 IoUtil.close(socket);
                 IoUtil.close(os);

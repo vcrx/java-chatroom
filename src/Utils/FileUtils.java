@@ -1,9 +1,11 @@
 package Utils;
 
 import Client.Config;
+import Model.Message;
 
 import javax.swing.*;
 import javax.swing.filechooser.FileNameExtensionFilter;
+import javax.swing.filechooser.FileSystemView;
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
@@ -16,7 +18,7 @@ import java.security.NoSuchAlgorithmException;
 
 public class FileUtils {
     public static File fileChooser(FileNameExtensionFilter filter, File file) {
-        JFileChooser fc = new JFileChooser();
+        JFileChooser fc = new JFileChooser(FileSystemView.getFileSystemView());
         // 设置不允许多选
         fc.setMultiSelectionEnabled(false);
         if (filter != null) fc.setFileFilter(filter);
@@ -25,7 +27,7 @@ public class FileUtils {
 
         // JFileChooser.APPROVE_OPTION是个整型常量，代表0。就是说当返回0的值我们才执行相关操作，否则什么也不做。
         if (result == JFileChooser.APPROVE_OPTION) {
-            return fc.getSelectedFile(); // 绝对路径 file.getAbsolutePath();
+            return fc.getSelectedFile();
         }
         return null;
     }
@@ -51,10 +53,30 @@ public class FileUtils {
         }
     }
 
+    public static File chooseFile() {
+        return fileChooser(null, null);
+    }
+
+    public static File chooseImage() {
+        return fileChooser(new FileNameExtensionFilter("图片", "jpg", "jpeg", "png", "gif"), null);
+
+    }
+
+    public static String getGZippedFileB64(File file) {
+        String filePath = file.getAbsolutePath();
+        byte[] data = FileUtils.readContent(filePath);
+        if (data != null) {
+            data = ByteUtils.GZip(data);
+            return ByteUtils.encodeByteToBase64String(data);
+        }
+        return null;
+    }
 
     public static String getExtension(String filename) {
-        if (filename.contains(".")) {
-            return filename.substring(filename.lastIndexOf(".") + 1);
+        int i = filename.lastIndexOf('.');
+
+        if (i > 0 &&  i < filename.length() - 1) {
+            return filename.substring(i+1).toLowerCase();
         }
         return null;
     }

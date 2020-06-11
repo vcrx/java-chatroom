@@ -1,31 +1,19 @@
 package Client;
 
-import Constants.MessageType;
+import Constants.PrivateChatPool;
 import Model.Message;
-import Model.User;
-import Constants.LinkPrefix;
-import Utils.ByteUtils;
-import Utils.FileUtils;
-import Utils.LinkUtils;
 import cn.hutool.core.io.IoUtil;
-import cn.hutool.core.util.StrUtil;
 import com.alibaba.fastjson.JSON;
 
 import javax.swing.*;
-import javax.swing.border.EmptyBorder;
-import javax.swing.event.HyperlinkEvent;
-import javax.swing.event.HyperlinkListener;
-import javax.swing.filechooser.FileNameExtensionFilter;
-import javax.swing.text.DefaultCaret;
 import java.awt.*;
+import java.awt.event.WindowAdapter;
+import java.awt.event.WindowEvent;
 import java.io.*;
 import java.net.Socket;
-import java.util.HashMap;
-import java.util.Random;
 
 public class Main extends JFrame {
     private static final long serialVersionUID = 1L;
-    private static final Records rc = new Records();
 
     private static PrintStream ps;
     private static OutputStream os;
@@ -34,13 +22,8 @@ public class Main extends JFrame {
     private static BufferedReader br;
 
 
-    private static Main chatRoomFrame;
+    private static GroupChatFrame groupChatFrame;
     private static Socket cSocket = null;
-    private static final HashMap<String, PrivateChatFrame> privateChatFrameMap = new HashMap<>();
-    private final JEditorPane recordsPane;
-    private final JTextArea sendTextArea;
-    private final JEditorPane onlineUserPane;
-
 
     static void safeExit(Socket socket) {
         IoUtil.close(socket);
@@ -52,35 +35,6 @@ public class Main extends JFrame {
         System.exit(0);
     }
 
-    HyperlinkListener hyperlinkListener = new HyperlinkListener() {
-        @Override
-        public void hyperlinkUpdate(HyperlinkEvent e) {
-            if (e.getEventType() == HyperlinkEvent.EventType.ACTIVATED) {
-                try {
-                    String x = e.getDescription();
-                    if (x.startsWith(LinkPrefix.USER)) {
-                        String toUserString = StrUtil.removePrefix(x, LinkPrefix.USER);
-                        EventQueue.invokeLater(() -> {
-                            try {
-                                User toUser = JSON.parseObject(toUserString, User.class);
-                                PrivateChatFrame privateChatFrame = new PrivateChatFrame(ps, toUser);
-                                privateChatFrame.setVisible(true);
-                                privateChatFrameMap.put(toUser.userName, privateChatFrame);
-                            } catch (Exception e1) {
-                                e1.printStackTrace();
-                            }
-                        });
-                    } else if (x.startsWith(LinkPrefix.IMAGE)) {
-                        LinkUtils.ShowImage(x);
-                    } else if (x.startsWith(LinkPrefix.FILE)) {
-                        LinkUtils.SaveFileWithFilename(x);
-                    }
-                } catch (Throwable t) {
-                    t.printStackTrace();
-                }
-            }
-        }
-    };
 
     public static void handle_message(String json) throws Exception {
         if (json == null) {
@@ -89,86 +43,28 @@ public class Main extends JFrame {
         System.out.println("handle: " + json);
         Message msg = JSON.parseObject(json, Message.class);
         if (msg.toUser != null) {
+            // 私聊消息
             String key = msg.fromUser.userName;
             if (key.equals(Config.getInstance().getUserName())) {
                 key = msg.toUser.userName;
             }
-            PrivateChatFrame pc = privateChatFrameMap.get(key);
+            PrivateChatFrame pc = PrivateChatPool.get(key);
             if (pc == null) {
-                pc = new PrivateChatFrame(ps, msg.fromUser);
+                pc = new PrivateChatFrame(msg.fromUser);
+                pc.setPrintStream(ps);
                 pc.setVisible(true);
-                privateChatFrameMap.put(key, pc);
+                PrivateChatPool.put(key, pc);
             }
             if (!pc.isActive()) pc.setVisible(true);
             pc.addRecords(msg);
-            return;
-        }
-        if (!chatRoomFrame.isActive()) chatRoomFrame.setVisible(true);
-        chatRoomFrame.addRecords(msg);
-    }
 
-    public void addRecords(Message msg) throws Exception {
-        switch (msg.type) {
-            case MessageType.TEXT:
-                recordsPane.setText(rc.parseText(msg));
-                break;
-            case MessageType.EVENT:
-                switch (msg.msg) {
-                    case "join":
-                    case "left":
-                        recordsPane.setText(rc.parseJoinOrLeft(msg));
-                        onlineUserPane.setText(rc.parseOnlineUsers(msg));
-                        break;
-                }
-                break;
-            case MessageType.IMAGE:
-                recordsPane.setText(rc.parseImg(msg, chatRoomFrame));
-                break;
-            case MessageType.FILE:
-                recordsPane.setText(rc.parseFile(msg));
-                break;
+        } else {
+            // 群聊消息
+            if (!groupChatFrame.isActive()) groupChatFrame.setVisible(true);
+            groupChatFrame.addRecords(msg);
         }
     }
 
-    private User getUser() {
-        return new User(Config.getInstance().getUserName());
-    }
-
-    public void sendText() {
-        String text = sendTextArea.getText();
-        if (text.equals("")) {
-            return;
-        }
-        String jsonString = JSON.toJSONString(new Message(getUser(), text));
-        ps.println(jsonString);
-        sendTextArea.setText("");
-    }
-
-    private void _sendFile(File file, String type) {
-        String filePath = file.getAbsolutePath();
-        byte[] data = FileUtils.readContent(filePath);
-        if (data != null) {
-            data = ByteUtils.GZip(data);
-            String dataB64 = ByteUtils.encodeByteToBase64String(data);
-            Message msg = new Message(getUser(), dataB64, type, file.getName());
-            String jsonString = JSON.toJSONString(msg);
-            ps.println(jsonString);
-        }
-    }
-
-    public void sendFile() {
-        File file = FileUtils.fileChooser(null, null);
-        if (file != null) {
-            _sendFile(file, MessageType.FILE);
-        }
-    }
-
-    public void sendImg() {
-        File file = FileUtils.fileChooser(new FileNameExtensionFilter("图片", "jpg", "jpeg", "png", "gif"), null);
-        if (file != null) {
-            _sendFile(file, MessageType.IMAGE);
-        }
-    }
 
     public static void main(String[] args) {
         try {
@@ -180,10 +76,10 @@ public class Main extends JFrame {
 
         EventQueue.invokeLater(() -> {
             try {
-                chatRoomFrame = new Main();
-                chatRoomFrame.addWindowListener(new java.awt.event.WindowAdapter() {
+                groupChatFrame = new GroupChatFrame();
+                groupChatFrame.addWindowListener(new WindowAdapter() {
                     @Override
-                    public void windowClosing(java.awt.event.WindowEvent windowEvent) {
+                    public void windowClosing(WindowEvent windowEvent) {
                         if (JOptionPane.showConfirmDialog(null, "你确定要退出吗?",
                                 "退出聊天室", JOptionPane.YES_NO_OPTION,
                                 JOptionPane.QUESTION_MESSAGE) == JOptionPane.YES_OPTION) {
@@ -191,11 +87,12 @@ public class Main extends JFrame {
                         }
                     }
                 });
-                chatRoomFrame.setVisible(true);
+                groupChatFrame.setVisible(true);
             } catch (Exception e) {
                 e.printStackTrace();
             }
         });
+
         JPanel panel = new JPanel(new BorderLayout(5, 5));
         JPanel label = new JPanel(new GridLayout(0, 1, 2, 2));
         label.add(new JLabel("用户名：", SwingConstants.RIGHT));
@@ -213,10 +110,10 @@ public class Main extends JFrame {
         String password = "";
         while (password.isEmpty() || username.isEmpty()) {
             int s = JOptionPane.showConfirmDialog(
-                    chatRoomFrame, panel, "登录", JOptionPane.OK_CANCEL_OPTION);
+                    groupChatFrame, panel, "登录", JOptionPane.OK_CANCEL_OPTION);
             if (s != JOptionPane.OK_OPTION) {
                 // 用户点击了取消或关闭
-                chatRoomFrame.dispose();
+                groupChatFrame.dispose();
                 return;
             }
             username = userNameField.getText().strip();
@@ -224,7 +121,7 @@ public class Main extends JFrame {
         }
 
         Config.getInstance().setUserName(username);
-        chatRoomFrame.setTitle(username + " | " + Config.getInstance().getAppName());
+        groupChatFrame.setTitle(username + " | " + Config.getInstance().getAppName());
 
         try {
             cSocket = new Socket(Config.getInstance().getServerHost(), Config.getInstance().getServerPort());
@@ -233,6 +130,8 @@ public class Main extends JFrame {
             is = cSocket.getInputStream();
             isr = new InputStreamReader(is);
             br = new BufferedReader(isr);
+
+            groupChatFrame.setPrintStream(ps);
 
             System.out.println(username + "向服务器发送用户名密码");
             ps.println(username + ";" + password);
@@ -255,72 +154,5 @@ public class Main extends JFrame {
         } finally {
             safeExit(cSocket);
         }
-    }
-
-
-    public Main() {
-        setTitle(Config.getInstance().getAppName());
-        setDefaultCloseOperation(JFrame.DO_NOTHING_ON_CLOSE);
-        setBounds(100, 100, 700, 500);
-        Dimension d = Toolkit.getDefaultToolkit().getScreenSize();
-        int width = Math.max(d.width / 2, getSize().width);
-        int height = Math.max(d.height / 2, getSize().height);
-        width = Math.min(width, d.width * 2 / 3);
-        height = Math.min(height, d.height * 2 / 3);
-        setSize(width, height);
-        setLocation(d.width / 2 - width / 2, new Random().nextInt(height / 2) + 1);
-
-        JPanel contentPane = new JPanel();
-        contentPane.setBorder(new EmptyBorder(5, 5, 5, 5));
-        contentPane.setLayout(new BorderLayout(0, 0));
-        setContentPane(contentPane);
-
-        JPanel upPanel = new JPanel();
-        upPanel.setLayout(new BorderLayout(0, 0));
-        contentPane.add(upPanel, BorderLayout.CENTER);
-
-        recordsPane = new JEditorPane();
-        recordsPane.setEditable(false);
-        recordsPane.setContentType("text/html");
-        recordsPane.addHyperlinkListener(hyperlinkListener);
-        recordsPane.addMouseListener(new LinkUtils.HyperlinkMouseListener());
-        DefaultCaret caret = (DefaultCaret) recordsPane.getCaret();
-        caret.setUpdatePolicy(DefaultCaret.ALWAYS_UPDATE);
-        upPanel.add(new JScrollPane(recordsPane), BorderLayout.CENTER);
-
-        JPanel onlineUserPanel = new JPanel();
-        onlineUserPanel.setLayout(new BorderLayout(0, 0));
-        onlineUserPanel.setPreferredSize(new Dimension(120, 0));
-        upPanel.add(onlineUserPanel, BorderLayout.EAST);
-
-        onlineUserPane = new JEditorPane();
-        onlineUserPane.setContentType("text/html");
-        onlineUserPane.addHyperlinkListener(hyperlinkListener);
-        onlineUserPane.setEditable(false);
-        DefaultCaret caret1 = (DefaultCaret) onlineUserPane.getCaret();
-        caret1.setUpdatePolicy(DefaultCaret.ALWAYS_UPDATE);
-        onlineUserPanel.add(new JScrollPane(onlineUserPane));
-
-        JPanel controlPanel = new JPanel();
-        controlPanel.setLayout(new BorderLayout(0, 0));
-        contentPane.add(controlPanel, BorderLayout.SOUTH);
-        JScrollPane inputScrollPane = new JScrollPane();
-        controlPanel.add(inputScrollPane);
-
-        sendTextArea = new JTextArea();
-        sendTextArea.setRows(3);
-        sendTextArea.setLineWrap(true);
-        inputScrollPane.setViewportView(sendTextArea);
-        JMenuBar menuBar = new JMenuBar();
-        inputScrollPane.setColumnHeaderView(menuBar);
-        JButton sendImgBtn = new JButton("发送图片");
-        sendImgBtn.addActionListener(e -> sendImg());
-        menuBar.add(sendImgBtn);
-        JButton sendFileBtn = new JButton("发送文件");
-        sendFileBtn.addActionListener(e -> sendFile());
-        menuBar.add(sendFileBtn);
-        JButton sendButton = new JButton("Send");
-        sendButton.addActionListener(e -> sendText());
-        controlPanel.add(sendButton, BorderLayout.EAST);
     }
 }

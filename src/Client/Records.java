@@ -27,7 +27,7 @@ public class Records {
     public Document content = Jsoup.parse(baseHtml);
     Elements body = content.getElementsByTag("body");
 
-    private Element genUserA(User user) {
+    private Element genUserA(User user, boolean buildA) {
         Element a = new Element("a");
         String userName = user.userName;
         a.attr("style", "font-weight:bold");
@@ -35,17 +35,26 @@ public class Records {
             userName += " (我)";
             a.attr("style", a.attr("style") + ";color:#00bea9");
         } else {
-            a.attr("href", LinkPrefix.USER + JSON.toJSONString(user));
+            if (buildA)
+                a.attr("href", LinkPrefix.USER + JSON.toJSONString(user));
         }
         a.append(EscapeUtil.escapeHtml4(userName));
         return a;
     }
 
+    private Element genUserA(User user) {
+        return genUserA(user, true);
+    }
+
     private String genHeader(Message msg) {
+        return genHeader(msg, true);
+    }
+
+    private String genHeader(Message msg, boolean buildA) {
         Element span = new Element("span");
         span.attr("style", "font-weight:bold; color: blue");
         span.append("[" + DateUtil.format(new Date(msg.timeStamp), "yyyy-MM-dd HH:mm:ss") + "]");
-        return span.toString() + genUserA(msg.fromUser).toString();
+        return span.toString() + genUserA(msg.fromUser, buildA).toString();
     }
 
     public String parseText(Message msg) {
@@ -59,7 +68,7 @@ public class Records {
     public String parseJoinOrLeft(Message msg) {
         String type = msg.msg.equals("left") ? "离开" : "加入";
 
-        String build = genHeader(msg) + "<span style='font-weight:bold; color: red'>" + type + "了聊天室。</span><br />";
+        String build = genHeader(msg, !msg.msg.equals("left")) + "<span style='font-weight:bold; color: red'>" + type + "了聊天室。</span><br />";
         body.append(build);
         return content.toString();
     }

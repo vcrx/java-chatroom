@@ -2,10 +2,13 @@ package Client;
 
 import Constants.LinkPrefix;
 import Constants.MessageType;
+import Constants.PrivateChatPool;
 import Model.Message;
 import Model.User;
 import Utils.FileUtils;
 import Utils.LinkUtils;
+import cn.hutool.core.util.StrUtil;
+import com.alibaba.fastjson.JSON;
 
 import javax.swing.*;
 import javax.swing.border.EmptyBorder;
@@ -13,40 +16,30 @@ import javax.swing.event.HyperlinkEvent;
 import javax.swing.event.HyperlinkListener;
 import javax.swing.text.DefaultCaret;
 import java.awt.*;
-import java.awt.event.WindowAdapter;
-import java.awt.event.WindowEvent;
 import java.io.File;
-import java.io.PrintStream;
 import java.util.Random;
 
-public class PrivateChatFrame extends ChatFrame {
-    private static final long serialVersionUID = 2L;
+public class GroupChatFrame extends ChatFrame {
     private JEditorPane recordsPane;
     private JTextArea sendTextArea;
-    private final User toUser;
-
-    @Override
-    public void addRecords(Message msg) throws Exception {
-        switch (msg.type) {
-            case MessageType.TEXT:
-                recordsPane.setText(rc.parseText(msg));
-                break;
-            case MessageType.IMAGE:
-                recordsPane.setText(rc.parseImg(msg, this));
-                break;
-            case MessageType.FILE:
-                recordsPane.setText(rc.parseFile(msg));
-                break;
-        }
-    }
-
+    private JEditorPane onlineUserPane;
     HyperlinkListener hyperlinkListener = e -> {
         if (e.getEventType() == HyperlinkEvent.EventType.ACTIVATED) {
             try {
                 String x = e.getDescription();
                 if (x.startsWith(LinkPrefix.USER)) {
-                    String toUser = x.replace(LinkPrefix.USER, "");
-                    sendTextArea.setText(sendTextArea.getText() + " @" + toUser);
+                    String toUserString = StrUtil.removePrefix(x, LinkPrefix.USER);
+                    EventQueue.invokeLater(() -> {
+                        try {
+                            User toUser = JSON.parseObject(toUserString, User.class);
+                            PrivateChatFrame privateChatFrame = new PrivateChatFrame(toUser);
+                            privateChatFrame.setPrintStream(ps);
+                            privateChatFrame.setVisible(true);
+                            PrivateChatPool.put(toUser.userName, privateChatFrame);
+                        } catch (Exception e1) {
+                            e1.printStackTrace();
+                        }
+                    });
                 } else if (x.startsWith(LinkPrefix.IMAGE)) {
                     LinkUtils.ShowImage(x);
                 } else if (x.startsWith(LinkPrefix.FILE)) {
@@ -59,40 +52,9 @@ public class PrivateChatFrame extends ChatFrame {
     };
 
     @Override
-    public void sendText() {
-        String text = sendTextArea.getText();
-        sendTextArea.setText("");
-        if (text.equals("")) {
-            return;
-        }
-        Message msg = new Message(Config.getInstance().getUser(), text);
-        msg.toUser = this.toUser;
-        sendMsg(msg);
-    }
-
-    @Override
-    public void sendFile() {
-        File file = FileUtils.chooseFile();
-        if (file != null) {
-            Message msg = getSendFileMsg(file, MessageType.FILE);
-            msg.toUser = this.toUser;
-            sendMsg(msg);
-        }
-    }
-
-    @Override
-    public void sendImg() {
-        File file = FileUtils.chooseImage();
-        if (file != null) {
-            Message msg = getSendFileMsg(file, MessageType.IMAGE);
-            msg.toUser = this.toUser;
-            sendMsg(msg);
-        }
-    }
-
-    @Override
     public void initialize() {
-        setTitle(Config.getInstance().getUserName() + " ÔÚÓë " + toUser.userName + " Ë½ÁÄ");
+        setTitle(Config.getInstance().getAppName());
+        setDefaultCloseOperation(JFrame.DO_NOTHING_ON_CLOSE);
         setBounds(100, 100, 700, 500);
         Dimension d = Toolkit.getDefaultToolkit().getScreenSize();
         int width = Math.max(d.width / 2, getSize().width);
@@ -101,12 +63,6 @@ public class PrivateChatFrame extends ChatFrame {
         height = Math.min(height, d.height * 2 / 3);
         setSize(width, height);
         setLocation(d.width / 2 - width / 2, new Random().nextInt(height / 2) + 1);
-        try {
-            UIManager.setLookAndFeel(UIManager.getSystemLookAndFeelClassName());
-        } catch (ClassNotFoundException | InstantiationException | IllegalAccessException
-                | UnsupportedLookAndFeelException e) {
-            e.printStackTrace();
-        }
 
         JPanel contentPane = new JPanel();
         contentPane.setBorder(new EmptyBorder(5, 5, 5, 5));
@@ -125,6 +81,19 @@ public class PrivateChatFrame extends ChatFrame {
         DefaultCaret caret = (DefaultCaret) recordsPane.getCaret();
         caret.setUpdatePolicy(DefaultCaret.ALWAYS_UPDATE);
         upPanel.add(new JScrollPane(recordsPane), BorderLayout.CENTER);
+
+        JPanel onlineUserPanel = new JPanel();
+        onlineUserPanel.setLayout(new BorderLayout(0, 0));
+        onlineUserPanel.setPreferredSize(new Dimension(120, 0));
+        upPanel.add(onlineUserPanel, BorderLayout.EAST);
+
+        onlineUserPane = new JEditorPane();
+        onlineUserPane.setContentType("text/html");
+        onlineUserPane.addHyperlinkListener(hyperlinkListener);
+        onlineUserPane.setEditable(false);
+        DefaultCaret caret1 = (DefaultCaret) onlineUserPane.getCaret();
+        caret1.setUpdatePolicy(DefaultCaret.ALWAYS_UPDATE);
+        onlineUserPanel.add(new JScrollPane(onlineUserPane));
 
         JPanel controlPanel = new JPanel();
         controlPanel.setLayout(new BorderLayout(0, 0));
@@ -147,24 +116,59 @@ public class PrivateChatFrame extends ChatFrame {
         JButton sendButton = new JButton("Send");
         sendButton.addActionListener(e -> sendText());
         controlPanel.add(sendButton, BorderLayout.EAST);
-        this.addWindowListener(new WindowAdapter() {
-            @Override
-            public void windowClosing(WindowEvent windowEvent) {
-                dispose();
-            }
-
-            @Override
-            public void windowStateChanged(WindowEvent e) {
-                super.windowStateChanged(e);
-                repaint();
-            }
-        });
-
-        recordsPane.setText(rc.content.toString());
     }
 
-    public PrivateChatFrame(User user) {
-        this.toUser = user;
+    @Override
+    public void addRecords(Message msg) throws Exception {
+        switch (msg.type) {
+            case MessageType.TEXT:
+                recordsPane.setText(rc.parseText(msg));
+                break;
+            case MessageType.EVENT:
+                switch (msg.msg) {
+                    case "left":
+                        PrivateChatFrame frame = PrivateChatPool.get(msg.fromUser.userName);
+                        if (frame != null) frame.dispose();
+                    case "join":
+                        recordsPane.setText(rc.parseJoinOrLeft(msg));
+                        onlineUserPane.setText(rc.parseOnlineUsers(msg));
+                        break;
+                }
+                break;
+            case MessageType.IMAGE:
+                recordsPane.setText(rc.parseImg(msg, this));
+                break;
+            case MessageType.FILE:
+                recordsPane.setText(rc.parseFile(msg));
+                break;
+        }
+    }
+
+    @Override
+    public void sendText() {
+        String text = sendTextArea.getText();
+        sendTextArea.setText("");
+        if (text.equals("")) return;
+        sendMsg(new Message(Config.getInstance().getUser(), text));
+    }
+
+    @Override
+    public void sendFile() {
+        File file = FileUtils.chooseFile();
+        if (file == null) return;
+        Message msg = getSendFileMsg(file, MessageType.FILE);
+        sendMsg(msg);
+    }
+
+    @Override
+    public void sendImg() {
+        File file = FileUtils.chooseImage();
+        if (file == null) return;
+        Message msg = getSendFileMsg(file, MessageType.IMAGE);
+        sendMsg(msg);
+    }
+
+    public GroupChatFrame() {
         initialize();
     }
 }
