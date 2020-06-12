@@ -1,12 +1,11 @@
 package Client;
 
-import Constants.LinkPrefix;
-import Constants.MessageType;
-import Constants.PrivateChatPool;
+import Client.Constants.LinkPrefix;
+import Client.Constants.MessageType;
 import Model.Message;
 import Model.User;
-import Utils.FileUtils;
-import Utils.LinkUtils;
+import Client.Utils.FileUtils;
+import Client.Utils.LinkUtils;
 import cn.hutool.core.util.StrUtil;
 import com.alibaba.fastjson.JSON;
 
@@ -28,18 +27,7 @@ public class GroupChatFrame extends ChatFrame {
             try {
                 String x = e.getDescription();
                 if (x.startsWith(LinkPrefix.USER)) {
-                    String toUserString = StrUtil.removePrefix(x, LinkPrefix.USER);
-                    EventQueue.invokeLater(() -> {
-                        try {
-                            User toUser = JSON.parseObject(toUserString, User.class);
-                            PrivateChatFrame privateChatFrame = new PrivateChatFrame(toUser);
-                            privateChatFrame.setPrintStream(ps);
-                            privateChatFrame.setVisible(true);
-                            PrivateChatPool.put(toUser.userName, privateChatFrame);
-                        } catch (Exception e1) {
-                            e1.printStackTrace();
-                        }
-                    });
+
                 } else if (x.startsWith(LinkPrefix.IMAGE)) {
                     LinkUtils.ShowImage(x);
                 } else if (x.startsWith(LinkPrefix.FILE)) {
@@ -149,7 +137,7 @@ public class GroupChatFrame extends ChatFrame {
         String text = sendTextArea.getText();
         sendTextArea.setText("");
         if (text.equals("")) return;
-        sendMsg(new Message(Config.getInstance().getUser(), text));
+        sendMsg(new Message(CurrUser.getInstance().getUser(), text));
     }
 
     @Override

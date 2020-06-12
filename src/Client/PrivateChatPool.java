@@ -1,6 +1,4 @@
-package Constants;
-
-import Client.PrivateChatFrame;
+package Client;
 
 import java.util.HashMap;
 

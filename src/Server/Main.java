@@ -1,6 +1,6 @@
 package Server;
 
-import Exceptions.PasswordError;
+import Server.Exceptions.PasswordError;
 import Model.Message;
 import Model.User;
 import cn.hutool.core.io.IoUtil;

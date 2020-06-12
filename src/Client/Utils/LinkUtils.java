@@ -1,9 +1,13 @@
-package Utils;
+package Client.Utils;
 
 import Client.ImageFrame;
-import Constants.LinkPrefix;
+import Client.Constants.LinkPrefix;
+import Client.PrivateChatFrame;
+import Client.PrivateChatPool;
+import Model.User;
 import cn.hutool.core.io.FileTypeUtil;
 import cn.hutool.core.util.StrUtil;
+import com.alibaba.fastjson.JSON;
 
 import javax.swing.*;
 import javax.swing.text.AttributeSet;
@@ -66,6 +70,19 @@ public class LinkUtils {
                 }
             }
         }
+    }
+    public static void ShowUser(String userLink) {
+        String toUserString = StrUtil.removePrefix(userLink, LinkPrefix.USER);
+        EventQueue.invokeLater(() -> {
+            try {
+                User toUser = JSON.parseObject(toUserString, User.class);
+                PrivateChatFrame pcf = new PrivateChatFrame(toUser);
+                pcf.setVisible(true);
+                PrivateChatPool.put(toUser.userName, pcf);
+            } catch (Exception e1) {
+                e1.printStackTrace();
+            }
+        });
     }
 
     public static void ShowImage(String imageLink) {

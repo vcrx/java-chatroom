@@ -1,11 +1,11 @@
 package Client;
 
-import Constants.LinkPrefix;
-import Constants.MessageType;
+import Client.Constants.LinkPrefix;
+import Client.Constants.MessageType;
 import Model.Message;
 import Model.User;
-import Utils.FileUtils;
-import Utils.LinkUtils;
+import Client.Utils.FileUtils;
+import Client.Utils.LinkUtils;
 
 import javax.swing.*;
 import javax.swing.border.EmptyBorder;
@@ -16,7 +16,6 @@ import java.awt.*;
 import java.awt.event.WindowAdapter;
 import java.awt.event.WindowEvent;
 import java.io.File;
-import java.io.PrintStream;
 import java.util.Random;
 
 public class PrivateChatFrame extends ChatFrame {
@@ -65,7 +64,7 @@ public class PrivateChatFrame extends ChatFrame {
         if (text.equals("")) {
             return;
         }
-        Message msg = new Message(Config.getInstance().getUser(), text);
+        Message msg = new Message(CurrUser.getInstance().getUser(), text);
         msg.toUser = this.toUser;
         sendMsg(msg);
     }
@@ -92,7 +91,7 @@ public class PrivateChatFrame extends ChatFrame {
 
     @Override
     public void initialize() {
-        setTitle(Config.getInstance().getUserName() + " 在与 " + toUser.userName + " 私聊");
+        setTitle(CurrUser.getInstance().getUserName() + " 在与 " + toUser.userName + " 私聊");
         setBounds(100, 100, 700, 500);
         Dimension d = Toolkit.getDefaultToolkit().getScreenSize();
         int width = Math.max(d.width / 2, getSize().width);

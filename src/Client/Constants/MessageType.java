@@ -1,4 +1,4 @@
-package Constants;
+package Client.Constants;
 
 public class MessageType {
     public final static String EVENT = "event";

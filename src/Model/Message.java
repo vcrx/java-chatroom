@@ -1,6 +1,6 @@
 package Model;
 
-import Constants.MessageType;
+import Client.Constants.MessageType;
 
 import java.util.Date;
 import java.util.List;

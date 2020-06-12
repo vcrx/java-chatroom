@@ -1,10 +1,10 @@
 package Client;
 
+import Client.Constants.LinkPrefix;
+import Client.Utils.ByteUtils;
+import Client.Utils.FileUtils;
 import Model.Message;
 import Model.User;
-import Constants.LinkPrefix;
-import Utils.ByteUtils;
-import Utils.FileUtils;
 import cn.hutool.core.date.DateUtil;
 import cn.hutool.core.util.EscapeUtil;
 import com.alibaba.fastjson.JSON;
@@ -31,7 +31,7 @@ public class Records {
         Element a = new Element("a");
         String userName = user.userName;
         a.attr("style", "font-weight:bold");
-        if (user.userName.equals(Config.getInstance().getUserName())) {
+        if (user.userName.equals(CurrUser.getInstance().getUserName())) {
             userName += " (Œ“)";
             a.attr("style", a.attr("style") + ";color:#00bea9");
         } else {

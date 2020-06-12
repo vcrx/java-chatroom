@@ -1,7 +1,6 @@
-package Utils;
+package Client.Utils;
 
-import Client.Config;
-import Model.Message;
+import Client.CurrUser;
 
 import javax.swing.*;
 import javax.swing.filechooser.FileNameExtensionFilter;
@@ -13,8 +12,6 @@ import java.io.OutputStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.security.MessageDigest;
-import java.security.NoSuchAlgorithmException;
 
 public class FileUtils {
     public static File fileChooser(FileNameExtensionFilter filter, File file) {
@@ -75,14 +72,15 @@ public class FileUtils {
     public static String getExtension(String filename) {
         int i = filename.lastIndexOf('.');
 
-        if (i > 0 &&  i < filename.length() - 1) {
-            return filename.substring(i+1).toLowerCase();
+        if (i > 0 && i < filename.length() - 1) {
+            return filename.substring(i + 1).toLowerCase();
         }
         return null;
     }
 
     public static Path getTempDirectory() {
-        String dir = String.valueOf(Config.getInstance().getUserName().hashCode()).toUpperCase();
+        // 用户唯一标识
+        String dir = String.valueOf(CurrUser.getInstance().getUserName().hashCode()).toUpperCase();
         Path tempDir = Paths.get(System.getProperty("java.io.tmpdir") + "/chatroom/" + dir + "/");
         File file = new File(tempDir.toString());
         if (!file.exists()) {

@@ -1,4 +1,4 @@
-package Constants;
+package Client.Constants;
 
 public class LinkPrefix {
     public final static String FILE = "file://";

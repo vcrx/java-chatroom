@@ -1,6 +1,5 @@
 package Client;
 
-import Constants.PrivateChatPool;
 import Model.Message;
 import cn.hutool.core.io.IoUtil;
 import com.alibaba.fastjson.JSON;
@@ -15,53 +14,45 @@ import java.net.Socket;
 public class Main extends JFrame {
     private static final long serialVersionUID = 1L;
 
-    private static PrintStream ps;
     private static OutputStream os;
     private static InputStream is;
     private static InputStreamReader isr;
     private static BufferedReader br;
-
-
-    private static GroupChatFrame groupChatFrame;
-    private static Socket cSocket = null;
+    private static GroupChatFrame gcf;
+    private static Socket cSocket;
 
     static void safeExit(Socket socket) {
         IoUtil.close(socket);
         IoUtil.close(os);
         IoUtil.close(is);
-        IoUtil.close(ps);
         IoUtil.close(isr);
         IoUtil.close(br);
+        CurrUser.getInstance().close();
         System.exit(0);
     }
 
 
     public static void handle_message(String json) throws Exception {
-        if (json == null) {
-            return;
-        }
+        if (json == null) return;
         System.out.println("handle: " + json);
         Message msg = JSON.parseObject(json, Message.class);
         if (msg.toUser != null) {
             // 私聊消息
             String key = msg.fromUser.userName;
-            if (key.equals(Config.getInstance().getUserName())) {
+            if (key.equals(CurrUser.getInstance().getUserName())) {
                 key = msg.toUser.userName;
             }
-            PrivateChatFrame pc = PrivateChatPool.get(key);
-            if (pc == null) {
-                pc = new PrivateChatFrame(msg.fromUser);
-                pc.setPrintStream(ps);
-                pc.setVisible(true);
-                PrivateChatPool.put(key, pc);
+            PrivateChatFrame pcf = PrivateChatPool.get(key);
+            if (pcf == null) {
+                pcf = new PrivateChatFrame(msg.fromUser);
+                PrivateChatPool.put(key, pcf);
             }
-            if (!pc.isActive()) pc.setVisible(true);
-            pc.addRecords(msg);
-
+            if (!pcf.isActive()) pcf.setVisible(true);
+            pcf.addRecords(msg);
         } else {
             // 群聊消息
-            if (!groupChatFrame.isActive()) groupChatFrame.setVisible(true);
-            groupChatFrame.addRecords(msg);
+            if (!gcf.isActive()) gcf.setVisible(true);
+            gcf.addRecords(msg);
         }
     }
 
@@ -76,8 +67,8 @@ public class Main extends JFrame {
 
         EventQueue.invokeLater(() -> {
             try {
-                groupChatFrame = new GroupChatFrame();
-                groupChatFrame.addWindowListener(new WindowAdapter() {
+                gcf = new GroupChatFrame();
+                gcf.addWindowListener(new WindowAdapter() {
                     @Override
                     public void windowClosing(WindowEvent windowEvent) {
                         if (JOptionPane.showConfirmDialog(null, "你确定要退出吗?",
@@ -87,7 +78,7 @@ public class Main extends JFrame {
                         }
                     }
                 });
-                groupChatFrame.setVisible(true);
+                gcf.setVisible(true);
             } catch (Exception e) {
                 e.printStackTrace();
             }
@@ -110,35 +101,34 @@ public class Main extends JFrame {
         String password = "";
         while (password.isEmpty() || username.isEmpty()) {
             int s = JOptionPane.showConfirmDialog(
-                    groupChatFrame, panel, "登录", JOptionPane.OK_CANCEL_OPTION);
+                    gcf, panel, "登录", JOptionPane.OK_CANCEL_OPTION);
             if (s != JOptionPane.OK_OPTION) {
                 // 用户点击了取消或关闭
-                groupChatFrame.dispose();
+                gcf.dispose();
                 return;
             }
             username = userNameField.getText().strip();
             password = String.valueOf(passwordField.getPassword()).strip();
         }
 
-        Config.getInstance().setUserName(username);
-        groupChatFrame.setTitle(username + " | " + Config.getInstance().getAppName());
+        CurrUser.getInstance().setUserName(username);
+        gcf.setTitle(username + " | " + Config.getInstance().getAppName());
 
         try {
             cSocket = new Socket(Config.getInstance().getServerHost(), Config.getInstance().getServerPort());
             os = cSocket.getOutputStream();
-            ps = new PrintStream(os);
             is = cSocket.getInputStream();
             isr = new InputStreamReader(is);
             br = new BufferedReader(isr);
 
-            groupChatFrame.setPrintStream(ps);
+            CurrUser.getInstance().setPs(new PrintStream(os));
 
             System.out.println(username + "向服务器发送用户名密码");
-            ps.println(username + ";" + password);
+            CurrUser.getInstance().send(username + ";" + password);
             String ack = br.readLine();
             if (ack.equals("ack_" + username)) {
                 System.out.println("服务器响应：" + ack);
-                ps.println("ack_" + username);
+                CurrUser.getInstance().send("ack_" + username);
                 System.out.println("连接服务器成功");
                 String json;
                 while ((json = br.readLine()) != null) {
