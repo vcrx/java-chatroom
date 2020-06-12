@@ -57,12 +57,16 @@ public class Records {
         return span.toString() + genUserA(msg.fromUser, buildA).toString();
     }
 
-    public String parseText(Message msg) {
+    public String parseText(Message msg, boolean buildA) {
         String text = EscapeUtil.escapeHtml4(msg.msg.replace("\n", "<br/>"));
-        String build = genHeader(msg) +
+        String build = genHeader(msg, buildA) +
                 "£º<br /><p style='font-size:16px;margin-top:3px;'>" + text + "</p><br />";
         body.append(build);
         return content.toString();
+    }
+
+    public String parseText(Message msg) {
+        return parseText(msg, true);
     }
 
     public String parseJoinOrLeft(Message msg) {

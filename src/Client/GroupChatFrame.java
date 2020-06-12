@@ -3,11 +3,8 @@ package Client;
 import Client.Constants.LinkPrefix;
 import Client.Constants.MessageType;
 import Model.Message;
-import Model.User;
 import Client.Utils.FileUtils;
 import Client.Utils.LinkUtils;
-import cn.hutool.core.util.StrUtil;
-import com.alibaba.fastjson.JSON;
 
 import javax.swing.*;
 import javax.swing.border.EmptyBorder;
@@ -22,16 +19,17 @@ public class GroupChatFrame extends ChatFrame {
     private JEditorPane recordsPane;
     private JTextArea sendTextArea;
     private JEditorPane onlineUserPane;
+
     HyperlinkListener hyperlinkListener = e -> {
         if (e.getEventType() == HyperlinkEvent.EventType.ACTIVATED) {
             try {
                 String x = e.getDescription();
                 if (x.startsWith(LinkPrefix.USER)) {
-
+                    LinkUtils.showUser(x);
                 } else if (x.startsWith(LinkPrefix.IMAGE)) {
-                    LinkUtils.ShowImage(x);
+                    LinkUtils.showImage(x);
                 } else if (x.startsWith(LinkPrefix.FILE)) {
-                    LinkUtils.SaveFileWithFilename(x);
+                    LinkUtils.saveFileWithFilename(x);
                 }
             } catch (Throwable t) {
                 t.printStackTrace();

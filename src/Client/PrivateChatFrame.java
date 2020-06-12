@@ -47,9 +47,9 @@ public class PrivateChatFrame extends ChatFrame {
                     String toUser = x.replace(LinkPrefix.USER, "");
                     sendTextArea.setText(sendTextArea.getText() + " @" + toUser);
                 } else if (x.startsWith(LinkPrefix.IMAGE)) {
-                    LinkUtils.ShowImage(x);
+                    LinkUtils.showImage(x);
                 } else if (x.startsWith(LinkPrefix.FILE)) {
-                    LinkUtils.SaveFileWithFilename(x);
+                    LinkUtils.saveFileWithFilename(x);
                 }
             } catch (Throwable t) {
                 t.printStackTrace();

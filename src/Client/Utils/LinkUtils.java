@@ -26,7 +26,7 @@ import java.net.URL;
 import java.nio.file.Paths;
 
 public class LinkUtils {
-    public static void SaveFileWithFilename(String fileLink) {
+    public static void saveFileWithFilename(String fileLink) {
         String content = StrUtil.removePrefix(fileLink, LinkPrefix.FILE);
         int r = content.lastIndexOf(";");
         String filename = "";
@@ -42,7 +42,7 @@ public class LinkUtils {
         }
     }
 
-    public static void SaveImage(String imageLink) throws MalformedURLException, URISyntaxException {
+    public static void saveImage(String imageLink) throws MalformedURLException, URISyntaxException {
         String imgPath = StrUtil.removePrefix(imageLink, LinkPrefix.IMAGE);
         byte[] fileSrc = FileUtils.readContent(Paths.get(new URL(imgPath).toURI()).toAbsolutePath().toString());
         String type = FileTypeUtil.getType(new ByteArrayInputStream(fileSrc));
@@ -61,17 +61,18 @@ public class LinkUtils {
                 if (link == null) return;
                 if (link.startsWith(LinkPrefix.IMAGE)) {
                     try {
-                        LinkUtils.SaveImage(link);
+                        LinkUtils.saveImage(link);
                     } catch (MalformedURLException | URISyntaxException malformedURLException) {
                         malformedURLException.printStackTrace();
                     }
                 } else if (link.startsWith(LinkPrefix.FILE)) {
-                    LinkUtils.SaveFileWithFilename(link);
+                    LinkUtils.saveFileWithFilename(link);
                 }
             }
         }
     }
-    public static void ShowUser(String userLink) {
+    
+    public static void showUser(String userLink) {
         String toUserString = StrUtil.removePrefix(userLink, LinkPrefix.USER);
         EventQueue.invokeLater(() -> {
             try {
@@ -85,7 +86,7 @@ public class LinkUtils {
         });
     }
 
-    public static void ShowImage(String imageLink) {
+    public static void showImage(String imageLink) {
         String imgPath = StrUtil.removePrefix(imageLink, LinkPrefix.IMAGE);
         EventQueue.invokeLater(() -> {
             try {

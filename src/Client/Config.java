@@ -4,7 +4,7 @@ package Client;
 public class Config {
     private static final Config instance = new Config();
 
-    private final String AppName = "ÍøÉÏ³åÀËÁÄÌìÊÒ";
+    private final String APP_NAME = "ÍøÉÏ³åÀËÁÄÌìÊÒ";
     private final String SERVER_HOST = "localhost";
     private final int SERVER_PORT = 1002;
 
@@ -20,7 +20,7 @@ public class Config {
     }
 
     public String getAppName() {
-        return AppName;
+        return APP_NAME;
     }
 
     public String getServerHost() {

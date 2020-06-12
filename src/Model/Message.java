@@ -14,7 +14,6 @@ public class Message {
     public Long timeStamp;
     public String filename;
 
-
     public Message() {
     }
 
