@@ -1,6 +1,7 @@
 package Client.Utils;
 
 import Client.CurrUser;
+import Model.Message;
 
 import javax.swing.*;
 import javax.swing.filechooser.FileNameExtensionFilter;
@@ -29,6 +30,14 @@ public class FileUtils {
         return null;
     }
 
+    public static File chooseFile() {
+        return FileUtils.fileChooser(null, null);
+    }
+
+    public static File chooseImage() {
+        return FileUtils.fileChooser(new FileNameExtensionFilter("ͼƬ", "jpg", "jpeg", "png", "gif"), null);
+    }
+
     public static byte[] readContent(String filePath) {
         File file = new File(filePath);
         byte[] data = null;
@@ -48,15 +57,6 @@ public class FileUtils {
         } catch (Exception e) {
             e.printStackTrace();
         }
-    }
-
-    public static File chooseFile() {
-        return fileChooser(null, null);
-    }
-
-    public static File chooseImage() {
-        return fileChooser(new FileNameExtensionFilter("ͼƬ", "jpg", "jpeg", "png", "gif"), null);
-
     }
 
     public static String getGZippedFileB64(File file) {
@@ -87,5 +87,11 @@ public class FileUtils {
             if (!file.mkdirs()) return null;
         }
         return tempDir;
+    }
+
+    public static Message genFileMsg(File file, String type) {
+        String dataB64 = getGZippedFileB64(file);
+        if (dataB64 == null) return null;
+        return new Message(CurrUser.getInstance().getUser(), dataB64, type, file.getName());
     }
 }

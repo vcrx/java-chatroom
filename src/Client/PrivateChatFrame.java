@@ -25,71 +25,6 @@ public class PrivateChatFrame extends ChatFrame {
     private final User toUser;
 
     @Override
-    public void addRecords(Message msg) throws Exception {
-        switch (msg.type) {
-            case MessageType.TEXT:
-                recordsPane.setText(rc.parseText(msg));
-                break;
-            case MessageType.IMAGE:
-                recordsPane.setText(rc.parseImg(msg, this));
-                break;
-            case MessageType.FILE:
-                recordsPane.setText(rc.parseFile(msg));
-                break;
-        }
-    }
-
-    HyperlinkListener hyperlinkListener = e -> {
-        if (e.getEventType() == HyperlinkEvent.EventType.ACTIVATED) {
-            try {
-                String x = e.getDescription();
-                if (x.startsWith(LinkPrefix.USER)) {
-                    String toUser = x.replace(LinkPrefix.USER, "");
-                    sendTextArea.setText(sendTextArea.getText() + " @" + toUser);
-                } else if (x.startsWith(LinkPrefix.IMAGE)) {
-                    LinkUtils.showImage(x);
-                } else if (x.startsWith(LinkPrefix.FILE)) {
-                    LinkUtils.saveFileWithFilename(x);
-                }
-            } catch (Throwable t) {
-                t.printStackTrace();
-            }
-        }
-    };
-
-    @Override
-    public void sendText() {
-        String text = sendTextArea.getText();
-        sendTextArea.setText("");
-        if (text.equals("")) {
-            return;
-        }
-        Message msg = new Message(CurrUser.getInstance().getUser(), text);
-        msg.toUser = this.toUser;
-        sendMsg(msg);
-    }
-
-    @Override
-    public void sendFile() {
-        File file = FileUtils.chooseFile();
-        if (file != null) {
-            Message msg = getSendFileMsg(file, MessageType.FILE);
-            msg.toUser = this.toUser;
-            sendMsg(msg);
-        }
-    }
-
-    @Override
-    public void sendImg() {
-        File file = FileUtils.chooseImage();
-        if (file != null) {
-            Message msg = getSendFileMsg(file, MessageType.IMAGE);
-            msg.toUser = this.toUser;
-            sendMsg(msg);
-        }
-    }
-
-    @Override
     public void initialize() {
         setTitle(CurrUser.getInstance().getUserName() + " ÔÚÓë " + toUser.userName + " Ë½ÁÄ");
         setBounds(100, 100, 700, 500);
@@ -160,6 +95,73 @@ public class PrivateChatFrame extends ChatFrame {
         });
 
         recordsPane.setText(rc.content.toString());
+    }
+
+    @Override
+    public void addRecords(Message msg) throws Exception {
+        switch (msg.type) {
+            case MessageType.TEXT:
+                recordsPane.setText(rc.parseText(msg));
+                break;
+            case MessageType.IMAGE:
+                recordsPane.setText(rc.parseImg(msg, this));
+                break;
+            case MessageType.FILE:
+                recordsPane.setText(rc.parseFile(msg));
+                break;
+        }
+    }
+
+    HyperlinkListener hyperlinkListener = e -> {
+        if (e.getEventType() == HyperlinkEvent.EventType.ACTIVATED) {
+            try {
+                String x = e.getDescription();
+                if (x.startsWith(LinkPrefix.USER)) {
+                    String toUser = x.replace(LinkPrefix.USER, "");
+                    sendTextArea.setText(sendTextArea.getText() + " @" + toUser);
+                } else if (x.startsWith(LinkPrefix.IMAGE)) {
+                    LinkUtils.showImage(x);
+                } else if (x.startsWith(LinkPrefix.FILE)) {
+                    LinkUtils.saveFileWithFilename(x);
+                }
+            } catch (Throwable t) {
+                t.printStackTrace();
+            }
+        }
+    };
+
+    @Override
+    public void sendText() {
+        String text = sendTextArea.getText();
+        sendTextArea.setText("");
+        if (text.equals("")) {
+            return;
+        }
+        Message msg = new Message(CurrUser.getInstance().getUser(), text);
+        msg.toUser = this.toUser;
+        sendMsg(msg);
+    }
+
+    @Override
+    public void sendFile() {
+        File file = FileUtils.chooseFile();
+        if (file != null) {
+            Message msg = FileUtils.genFileMsg(file, MessageType.FILE);
+            assert msg != null;
+            msg.toUser = this.toUser;
+            sendMsg(msg);
+        }
+    }
+
+    @Override
+    public void sendImg() {
+        File file = FileUtils.chooseImage();
+        if (file != null) {
+            Message msg = FileUtils.genFileMsg(file, MessageType.IMAGE);
+            assert msg != null;
+            msg.toUser = this.toUser;
+            sendMsg(msg);
+        }
     }
 
     public PrivateChatFrame(User user) {

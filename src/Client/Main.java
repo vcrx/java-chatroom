@@ -36,24 +36,24 @@ public class Main extends JFrame {
         if (json == null) return;
         System.out.println("handle: " + json);
         Message msg = JSON.parseObject(json, Message.class);
+        ChatFrame cf;
         if (msg.toUser != null) {
             // 私聊消息
             String key = msg.fromUser.userName;
             if (key.equals(CurrUser.getInstance().getUserName())) {
                 key = msg.toUser.userName;
             }
-            PrivateChatFrame pcf = PrivateChatPool.get(key);
-            if (pcf == null) {
-                pcf = new PrivateChatFrame(msg.fromUser);
-                PrivateChatPool.put(key, pcf);
+            cf = PrivateChatPool.get(key);
+            if (cf == null) {
+                cf = new PrivateChatFrame(msg.fromUser);
+                PrivateChatPool.put(key, (PrivateChatFrame) cf);
             }
-            if (!pcf.isActive()) pcf.setVisible(true);
-            pcf.addRecords(msg);
         } else {
             // 群聊消息
-            if (!gcf.isActive()) gcf.setVisible(true);
-            gcf.addRecords(msg);
+            cf = gcf;
         }
+        if (!cf.isActive()) cf.setVisible(true);
+        cf.addRecords(msg);
     }
 
 

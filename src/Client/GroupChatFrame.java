@@ -142,7 +142,7 @@ public class GroupChatFrame extends ChatFrame {
     public void sendFile() {
         File file = FileUtils.chooseFile();
         if (file == null) return;
-        Message msg = getSendFileMsg(file, MessageType.FILE);
+        Message msg = FileUtils.genFileMsg(file, MessageType.FILE);
         sendMsg(msg);
     }
 
@@ -150,7 +150,7 @@ public class GroupChatFrame extends ChatFrame {
     public void sendImg() {
         File file = FileUtils.chooseImage();
         if (file == null) return;
-        Message msg = getSendFileMsg(file, MessageType.IMAGE);
+        Message msg = FileUtils.genFileMsg(file, MessageType.IMAGE);
         sendMsg(msg);
     }
 

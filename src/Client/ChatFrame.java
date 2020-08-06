@@ -1,11 +1,9 @@
 package Client;
 
 import Model.Message;
-import Client.Utils.FileUtils;
 import com.alibaba.fastjson.JSON;
 
 import javax.swing.*;
-import java.io.File;
 
 abstract public class ChatFrame extends JFrame {
     protected final Records rc;
@@ -23,11 +21,6 @@ abstract public class ChatFrame extends JFrame {
         CurrUser.getInstance().send(JSON.toJSONString(msg));
     }
 
-    public Message getSendFileMsg(File file, String type) {
-        String dataB64 = FileUtils.getGZippedFileB64(file);
-        if (dataB64 == null) return null;
-        return new Message(CurrUser.getInstance().getUser(), dataB64, type, file.getName());
-    }
 
     abstract public void sendText();
 

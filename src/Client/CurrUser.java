@@ -8,7 +8,6 @@ import java.io.PrintStream;
 public class CurrUser {
     private static final CurrUser instance = new CurrUser();
     private PrintStream ps;
-
     private String userName;
 
     private CurrUser() {
